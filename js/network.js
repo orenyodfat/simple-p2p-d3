@@ -32,6 +32,9 @@ $(document).ready(function() {
   $('#play').prop("disabled",true);
 
   //click handlers
+  $('#output-window').on('click', function() {
+    $('#log-console').toggle();
+  });
   $('#power').on('click',function(){ 
     initializeServer("0"); 
     $('#play').prop("disabled",false);
@@ -67,7 +70,7 @@ $(document).ready(function() {
 });
 
 function setupEventStream() {
-  eventSource = new EventSource(BACKEND_URL + '/' + networkname + "/");
+  eventSource = new EventSource(BACKEND_URL + '/networks/' + networkname);
 
   eventSource.addEventListener("simupdate", function(e) {
     updateVisualisationWithClass(JSON.parse(e.data));
@@ -84,12 +87,7 @@ function setupEventStream() {
 }
 
 function startViz(){
-  var opts = {
-    url: BACKEND_URL  + "/" + networkname,
-    type: "PUT",
-    data: {},
-  }
-  $.ajax(opts).then(
+  $.post(BACKEND_URL + "/networks/" + networkname + "/mock").then(
     function(d) {
       startTimer();
       setTimeout(function(){
@@ -104,11 +102,11 @@ function startViz(){
 function initializeServer(networkname_){
   networkname = networkname_;
   $("#error-messages").hide();
-  $.post(BACKEND_URL).then(
+  $.post(BACKEND_URL + "/networks", JSON.stringify({Id: networkname})).then(
     function(d){
       console.log("Backend POST init ok");
       //initializeMocker(networkname_);
-      $("#time-elapsed").show();
+      $(".elapsed").show();
       setupEventStream();
     },
     function(e,s,err) {
@@ -117,7 +115,7 @@ function initializeServer(networkname_){
       $('#power').prop("disabled",false);
       $('#play').prop("disabled",true);
       $('#pause').prop("disabled",true);
-      console.log("Error sending POST to " + BACKEND_URL);
+      console.log("Error sending POST to " + BACKEND_URL + "/networks");
       console.log(e);
     })
 };
@@ -140,18 +138,21 @@ function getGraphNodes(arr) {
         return {
           id: e.data.id,
           control: e.control,
+          visible: true,
           group: 1
        };
       }).toArray();
 }
 
 function getGraphLinks(arr) {
-  return arr.filter(function(i,e){return e.group === 'edges'})
+  return arr.filter(function(i,e){return e.group === 'edges' && !e.control} )
       .map(function(i,e){
         return {
           id: e.data.id,
+          control: e.control,
           source: e.data.source,
           target: e.data.target,
+          visible: true,
           group: 1,
           value: i
         };
@@ -168,6 +169,16 @@ function updateVisualisationWithClass(graph) {
 
   console.log("Updating visualization with new graph");
   eventHistory.push({timestamp:$("#time-elapsed").text(), content: graph});
+  
+  var objs = [graph.add, graph.remove, graph.message];
+  var act  = [ "ADD", "REMOVE", "MESSAGE" ];
+  for (var i=0;i<objs.length; i++) {
+    for (var k=0; objs[i] && k<objs[i].length; k++) {
+      var obj = objs[i][k];
+      var str = act[i] + " - " + obj.group + " Control: " + obj.control + " - " + obj.data.id + "</br>";
+      $("#log-console").append(str);
+    }
+  } 
 
   $('#node-kademlia-table').addClass("stale");
   //new nodes

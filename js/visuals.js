@@ -18,23 +18,18 @@ class P2Pd3Sidebar {
     this.selectConnections(data.id);
     //selectedNode.find('.node-balance').html(data.balance);
 
-    var payload = [];
-    payload.push(data.id);
-    var jsonpayload = JSON.stringify(payload);
-
     var classThis = this;
   
     $.ajax({
-      url: BACKEND_URL + "/"  + networkname + "/nodes",
-      data: jsonpayload,
-      type: "POST",
+      url: BACKEND_URL + "/networks/"  + networkname + "/nodes/" + data.id,
+      type: "GET",
       dataType: "json"
       }).then(
         function(d){
           console.log("Successfully retrieved node info for id: " + data.id);
           var nodeDom = selectedNode.find('#node-kademlia-table');
           //console.log(d);
-          nodeDom.html(classThis.formatNodeHTML(d[0]));
+          nodeDom.html(classThis.formatNodeHTML(d.protocols.bzz));
           nodeDom.removeClass("stale");
         },
         function(e){
@@ -64,12 +59,15 @@ class P2Pd3Sidebar {
 
     //console.log(removeLinks);
 
+    /*
     for (var i=0; i<removeLinks.length; i++) {
       if (this.visualisation.connsById[removeLinks[i].id]) {
         uplinks -= removeLinks.length;
         delete this.visualisation.connsById[removeLinks[i].id];
       }
     }
+    */
+    uplinks -= removeLinks.length;
     $("#edges-up-count").text(uplinks);
     $("#edges-remove-count").text(removeLinks.length);
   }
@@ -94,7 +92,13 @@ class P2Pd3Sidebar {
     this.visualisation.nodeCollection.classed("stale", true);
     var targets       = [];
     for (var k=0;k<conns.length;k++) {
-      targets.push(this.visualisation.connsById[conns[k]].target);
+      var c = this.visualisation.connsById[conns[k]];
+      if (c.target == conns[k].id) {
+        targets.push(c.source);
+      } else {
+        targets.push(c.target);
+        //targets.push(this.visualisation.connsById[conns[k]].target);
+      }
     }
     var nodesSelection = this.visualisation.nodeCollection.filter(function(n) {
       return targets.indexOf(n.id) > -1;
@@ -125,7 +129,7 @@ class P2Pd3 {
   }
 
   linkDistance(d) {
-    return Math.floor(Math.random() * 11) + 80;
+    return Math.floor(Math.random() * 11) + 160;
   }
 
   // increment callback function during simulation
@@ -237,7 +241,13 @@ class P2Pd3 {
     var self = this;
     // Apply the general update pattern to the nodes.
     if (this.nodesChanged) {
-      this.nodeCollection = this.nodeCollection.data(self.graphNodes);
+      this.nodeCollection = this.nodeCollection.data(this.graphNodes);
+      /*
+      var visibles = this.nodeCollection.data(self.graphNodes.filter(function(n){return n.visible}));
+      var invisibles = this.nodeCollection.data(self.graphNodes.filter(function(n){return !n.visible}));
+      visibles.attr("class", "visible");
+      invisibles.attr("class", "invisible");
+      */
       // Apply class "existing-node" to all existing nodes
       this.nodeCollection.attr("fill","#ae81ff");
       // Remove all old nodes
@@ -277,7 +287,11 @@ class P2Pd3 {
 
 
     this.simulation.nodes(self.graphNodes);            
-    this.simulation.force("link").links(self.graphLinks);
+    try {
+      this.simulation.force("link").links(self.graphLinks);
+    } catch(err) {
+      //do nothing
+    }
     this.simulation.force("center", d3.forceCenter(self.width/2, self.height/2));
     this.simulation.alpha(1).restart();
 
@@ -286,10 +300,23 @@ class P2Pd3 {
   appendNodes(nodes){
     if (!nodes.length) { return }
 
-    this.graphNodes = this.graphNodes.concat(nodes);
     for (var i=0; i<nodes.length; i++) {
       console.log("NEW node: " + nodes[i].id);
-      this.nodesById[nodeShortLabel(nodes[i].id)] = [];
+        /*
+      if (this.nodesById[nodeShortLabel(nodes[i].id)]) {
+        for (var k=0; k<this.graphNodes.length; k++) {
+          if (this.graphNodes[k].id == nodes[i].id) {
+            this.graphNodes[k].visible = true;
+          }
+        }
+      } else {
+        this.nodesById[nodeShortLabel(nodes[i].id)] = [];
+        this.graphNodes.push(nodes[i]);
+      }
+      
+        */
+        this.nodesById[nodeShortLabel(nodes[i].id)] = [];
+        this.graphNodes.push(nodes[i]);
     }
     this.nodesChanged = true;
   }
@@ -304,17 +331,21 @@ class P2Pd3 {
         for (var k=0; k<nodes.length; k++) {
           if (n.id == nodes[k].id) {
             contained = true;
-            //continue;
+            delete self.nodesById[nodes[k].id];
+            //n.visible = false;
+            break;
           } 
-          //this wouldn't be necessary if the backend behaved deterministically with connections
-          //we need to remove all nodes' connections "manually" in the frontend or we end up
+          //remove all nodes' connections "manually" in the frontend or we end up
           //with orphan connections 
+          /*
           var lab = nodeShortLabel(nodes[k].id);
           if (self.nodesById[lab]) {
-            //self.removeNodesLinks(lab);
+            self.hideNodesLinks(lab);
           }
+          */
         }
         return contained == false ; 
+        //return true; 
     });
     this.nodesChanged = true;
   }
@@ -322,7 +353,6 @@ class P2Pd3 {
   appendLinks(links){
     if (!links.length) { return }
 
-    this.graphLinks = this.graphLinks.concat(links);
     for (var i=0;i<links.length;i++) {
       var id     = links[i].id;
       var source = nodeShortLabel(links[i].source);
@@ -330,6 +360,26 @@ class P2Pd3 {
       //this should not happen, but it does...
       //indicates connections arrive before node events
       //so this is a bit of a hack...TODO on backend
+      var srcmatch = false;
+      var trgmatch = false;
+      for (var k=0; k<this.graphNodes.length; k++) {
+        var nid = nodeShortLabel(this.graphNodes[k].id)
+        if (nid == source) {
+          srcmatch = true;
+        }
+        if (nid == target) {
+          trgmatch = true;
+        }
+        if (srcmatch && trgmatch) {
+          break;
+        }
+      }
+      //don't try adding connections to non-existing nodes...
+      if (!srcmatch || !trgmatch) {
+          //uplinks -= 1
+          //$("#edges-up-count").text(uplinks);
+          return
+      }
       if (!this.nodesById[source]) {
         this.nodesById[source] = [];
       }
@@ -343,26 +393,27 @@ class P2Pd3 {
       this.connsById[id].target = links[i].target;
       this.connsById[id].source = links[i].source;
     }
+    this.graphLinks = this.graphLinks.concat(links);
     console.log("ADD connection, source: " + source+ " - target: " + target );
     this.linksChanged = true;
   }
 
-  removeNodesLinks(id) {
-    var linksToRemove = [];
+  hideNodesLinks(id) {
+    var linksToHide = [];
     var connList = this.connsById;
     Object.keys(connList).forEach(function(key,index) {
       if (nodeShortLabel(connList[key].source) == id ||
           nodeShortLabel(connList[key].target) == id ) {
-        linksToRemove.push({id: key});
+        linksToHide.push({id: key});
         eventHistory.push({timestamp:$("#time-elapsed").text(), content: {add:[], remove:[{id: key}]} });
-        uplinks -= 1;
+        //uplinks -= 1;
         console.log("REMOVE connection, id:" + key);
-        delete connList[key];
+        //delete connList[key];
       }
     });
-    $("#edges-up-count").text(uplinks);
-    this.removeLinks(linksToRemove);
-    delete this.nodesById[id];
+    //$("#edges-up-count").text(uplinks);
+    this.removeLinks(linksToHide);
+    //delete this.nodesById[id];
   } 
 
   removeLinks(links){
@@ -374,7 +425,8 @@ class P2Pd3 {
         for (var k=0; k<links.length; k++) {
           if (n.id == links[k].id) {
             contained = true;
-            continue;
+            //n.visible = false;
+            break;
           } 
         }
         return contained == false ; 
