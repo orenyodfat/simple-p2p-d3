@@ -7,12 +7,13 @@ class P2Pd3Sidebar {
     //reset highlighted links if any
     this.visualisation.linkCollection
       .attr("stroke", "#808080")
-      .attr("stroke-width", "1.5")
+      .attr("stroke-width", 1.5)
       .classed("stale",false);
 
     var selectedNode = $(this.sidebar).find('#selected-node');
     $(".node-bar").show();
     selectedNode.addClass('node-selected');
+    selectedNode.find('#full-node-id').val(data.id);
     selectedNode.find('#node-id').html(nodeShortLabel(data.id));
     selectedNode.find('#node-index').html(data.index);
     this.selectConnections(data.id);
@@ -93,7 +94,7 @@ class P2Pd3Sidebar {
     var targets       = [];
     for (var k=0;k<conns.length;k++) {
       var c = this.visualisation.connsById[conns[k]];
-      if (c.target == conns[k].id) {
+      if (c.target == id) {
         targets.push(c.source);
       } else {
         targets.push(c.target);
@@ -101,11 +102,62 @@ class P2Pd3Sidebar {
       }
     }
     var nodesSelection = this.visualisation.nodeCollection.filter(function(n) {
-      return targets.indexOf(n.id) > -1;
+      return targets.indexOf(n.id) > -1 || n.id == id;
     });
     nodesSelection.classed("stale", false);
   }
 }
+
+function killNode() {
+  var node = $('#full-node-id').val();
+  $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + node + "/stop").then(
+    function(d) {
+      console.log("Node successfully stopped");
+    },
+    function(e) {
+      console.log("Error stopping node");
+      console.log(e);
+    })
+}
+
+function connectTo() {
+  $("body").css({"cursor": "crosshair"});
+  selectingTarget = true;
+}
+
+function finalizeConnectTo() {
+  $("body").css({"cursor": "default"});
+  selectingTarget = false;
+  var target = $("#target-id").val();
+  var source = $("#full-node-id").val();
+  $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + source+ "/conn/" + target).then(
+    function(d) {
+      console.log("Node successfully connected");
+    },
+    function(e) {
+      console.log("Error connecting node");
+      console.log(e);
+    })
+}
+
+function disconnectLink(id) {
+  var conn = visualisation.connsById[id];
+  //$.ajax(options);
+  $.ajax({
+    url: BACKEND_URL + "/networks/" + networkname + "/nodes/" + conn.source+ "/conn/" + conn.target,
+    type: "DELETE",
+    data: {},
+    contentType:'application/json',
+    dataType: 'text', 
+    success: function(d) {
+      console.log("it worked");
+    },
+    error: function(d) {
+      console.log("it didn't work");
+    }
+  });
+}
+
 
 class P2Pd3 {
   constructor(svg) {
@@ -225,7 +277,7 @@ class P2Pd3 {
     this.appendLinks(newLinks);
     this.removeLinks(removeLinks);
     
-    this.msg = this.triggerMsgs(triggerMsgs);
+    this.msg = this.processMsgs(triggerMsgs);
 
     if (!this.initialized) {
       this.initialize();
@@ -242,12 +294,6 @@ class P2Pd3 {
     // Apply the general update pattern to the nodes.
     if (this.nodesChanged) {
       this.nodeCollection = this.nodeCollection.data(this.graphNodes);
-      /*
-      var visibles = this.nodeCollection.data(self.graphNodes.filter(function(n){return n.visible}));
-      var invisibles = this.nodeCollection.data(self.graphNodes.filter(function(n){return !n.visible}));
-      visibles.attr("class", "visible");
-      invisibles.attr("class", "invisible");
-      */
       // Apply class "existing-node" to all existing nodes
       this.nodeCollection.attr("fill","#ae81ff");
       // Remove all old nodes
@@ -259,11 +305,16 @@ class P2Pd3 {
           .attr("fill", "#46bc99")
           .attr("r", this.nodeRadius)
           .on("click", function(d) {
+            if(selectingTarget) {
+              $("#target-id").val(d.id);
+              finalizeConnectTo();
+            } else {
               //deselect
               self.nodeCollection.classed("selected", function(p) { return p.selected =  p.previouslySelected = false; })
               //select
               d3.select(this).classed("selected",true);
               self.sidebar.updateSidebarSelectedNode(d);
+            }
 
           })
           .call(d3.drag()
@@ -281,20 +332,36 @@ class P2Pd3 {
           .enter()
           .append("line")
           .attr("stroke", "#808080")
-          .attr("stroke-width", "1.5")
+          .attr("stroke-width", 1.5)
+          .on("click", function(d) {
+            disconnectLink(d.id);
+          })
           .merge(this.linkCollection);
+    }
+
+    this.linkCollection.attr("stroke-width", function(d) { return 1.5 + ((parseInt(self.connsById[d.id].msgCount / 3) -1) / 2)  }); //increase in steps of 0.5
+
+    if (this.msg.length) {
+      var self = this;
+      this.msgCollection = this.linkCollection.filter(function(n) {
+        return self.msg[0].id == n.id;
+      });
+      this.msgCollection
+        .classed("highlight",true);
+      setTimeout(this.resetMsgCollection, 1000);
     }
 
 
     this.simulation.nodes(self.graphNodes);            
-    try {
-      this.simulation.force("link").links(self.graphLinks);
-    } catch(err) {
-      //do nothing
-    }
+    this.simulation.force("link").links(self.graphLinks);
     this.simulation.force("center", d3.forceCenter(self.width/2, self.height/2));
     this.simulation.alpha(1).restart();
 
+  }
+
+  resetMsgCollection() {
+    if (!this.msgCollection) return;
+    this.msgCollection.classed("highlight",false);
   }
 
   appendNodes(nodes){
@@ -302,19 +369,6 @@ class P2Pd3 {
 
     for (var i=0; i<nodes.length; i++) {
       console.log("NEW node: " + nodes[i].id);
-        /*
-      if (this.nodesById[nodeShortLabel(nodes[i].id)]) {
-        for (var k=0; k<this.graphNodes.length; k++) {
-          if (this.graphNodes[k].id == nodes[i].id) {
-            this.graphNodes[k].visible = true;
-          }
-        }
-      } else {
-        this.nodesById[nodeShortLabel(nodes[i].id)] = [];
-        this.graphNodes.push(nodes[i]);
-      }
-      
-        */
         this.nodesById[nodeShortLabel(nodes[i].id)] = [];
         this.graphNodes.push(nodes[i]);
     }
@@ -380,6 +434,7 @@ class P2Pd3 {
           //$("#edges-up-count").text(uplinks);
           return
       }
+      /*
       if (!this.nodesById[source]) {
         this.nodesById[source] = [];
       }
@@ -387,11 +442,14 @@ class P2Pd3 {
       if (!this.nodesById[target]) {
         this.nodesById[target] = [];
       }
+      */
       this.nodesById[target].push(id);
+      this.nodesById[source].push(id);
 
       this.connsById[id] = {};
-      this.connsById[id].target = links[i].target;
-      this.connsById[id].source = links[i].source;
+      this.connsById[id].target   = links[i].target;
+      this.connsById[id].source   = links[i].source;
+      this.connsById[id].msgCount = 0;
     }
     this.graphLinks = this.graphLinks.concat(links);
     console.log("ADD connection, source: " + source+ " - target: " + target );
@@ -426,6 +484,16 @@ class P2Pd3 {
           if (n.id == links[k].id) {
             contained = true;
             //n.visible = false;
+            var s = nodeShortLabel(links[k].source);            
+            var t = nodeShortLabel(links[k].target);            
+            var j = self.nodesById[s].indexOf(n.id);
+            if (j>-1) {
+              self.nodesById[s].splice(j, 1);
+            }
+            j = self.nodesById[t].indexOf(n.id);
+            if (j>-1) {
+              self.nodesById[t].splice(j, 1);
+            }
             break;
           } 
         }
@@ -434,20 +502,18 @@ class P2Pd3 {
     this.linksChanged = true;
   }
   
-	triggerMsgs(msgs){
-		this.graphMsgs = [];
-		for (var i = 0; i < msgs.length; i++) {
-			var conn = this.getConnByNodes(msgs[i].source,msgs[i].target);
-			if (conn != -1) {
-				var line = $("g.links").find("line:nth-child(" + (conn + 1) + ")");
-				//console.log("triggermsg on conn index " + conn + " obj " + line);
-				$(line).attr("stroke", "#ff0000");
-				this.graphMsgs.push(msgs[i]);
-			} else {
-				console.log("source " + msgs[i].source + " and target "+  msgs[i].target + " matched no existing conn");
-			}
-		}
-		return this.graphMsgs;
+	processMsgs(msgs){
+    if (!msgs.length) { return msgs }
+
+    for (var i=0;i<msgs.length;i++) {
+      var id = msgs[i].id;
+      if (this.connsById[id]) {
+        this.connsById[id].msgCount += 1;
+      } else {
+        console.log("WARN: got message for connection which does not exist in simulation!");
+      }
+    }
+    return msgs;
 	}
 
 
@@ -474,3 +540,4 @@ function generateUID() {
 function  nodeShortLabel(id) {
     return id.substr(0,8);
 }
+
