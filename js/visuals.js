@@ -30,7 +30,7 @@ class P2Pd3Sidebar {
           console.log("Successfully retrieved node info for id: " + data.id);
           var nodeDom = selectedNode.find('#node-kademlia-table');
           //console.log(d);
-          nodeDom.html(classThis.formatNodeHTML(d.protocols.bzz));
+          nodeDom.html(classThis.formatNodeHTML(d.protocols.hive));
           nodeDom.removeClass("stale");
         },
         function(e){
