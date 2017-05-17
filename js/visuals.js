@@ -172,6 +172,8 @@ class P2Pd3 {
     //for convenience; this may (or should) be "merged" with graphNodes
     this.nodesById = {};
     this.connsById = {};
+    this.connCounter = {};
+    this.sources = [];
 
     this.skipCollectionSetup = false;
 
@@ -450,6 +452,15 @@ class P2Pd3 {
       this.connsById[id].target   = links[i].target;
       this.connsById[id].source   = links[i].source;
       this.connsById[id].msgCount = 0;
+      if (! this.connCounter[id]) {
+        this.connCounter[id] = {};
+        this.connCounter[id].msgCount = 0;
+        this.connCounter[id].connCount= 0;
+      };
+      this.connCounter[id].connCount += 1;
+      if (this.sources.indexOf(links[i].source) == -1) {
+        this.sources.push(links[i].source);
+      }
     }
     this.graphLinks = this.graphLinks.concat(links);
     console.log("ADD connection, source: " + source+ " - target: " + target );
@@ -509,6 +520,7 @@ class P2Pd3 {
       var id = msgs[i].id;
       if (this.connsById[id]) {
         this.connsById[id].msgCount += 1;
+        this.connCounter[id].msgCount += 1;
       } else {
         console.log("WARN: got message for connection which does not exist in simulation!");
       }

@@ -10,6 +10,7 @@
     <script src="js/timemachine.js"></script>
     <script src="js/visuals.js"></script>
     <script src="js/network.js"></script>
+    <script src="js/chord.js"></script>
     
     <link rel="stylesheet" href="d3.css">
     
@@ -20,6 +21,25 @@
         <div class="logo">
           <img src="img/swarm-logo-horizontal.png"/>
           <img src="img/swarm-text.png"/>
+        </div>
+        <div class="backend-monitor">
+          <div class="monitor-label">Backend connection status</div>
+          <div class="monitor-indicator" id="backend-ok"></div>
+          <div class="monitor-indicator" id="backend-nok"></div>
+          <div class="action-btn-wrapper">
+              <button class="action-btn inline" id="power"><img width="30" src="./img/power.png"/></button>
+              <div class="icontext">Connect backend</div>
+          </div>
+          <div class="action-btn-wrapper">
+              <button class="action-btn inline" id="play"><img width="30" src="./img/play.png"/></button>
+              <div class="icontext">Start visualization</div>
+          </div>
+          <div class="action-btn-spacer"></div>
+          <div class="action-btn-wrapper">
+              <button class="action-btn inline" id="pause"><img width="30" src="./img/snapshot.png"/></button>
+              <div class="icontext">Take a snapshot</div>
+          </div>
+          <div class="inline elapsed">Time elapsed: <span id="time-elapsed">00:00:00</span></div>
         </div>
         <div class="title">
           p2p Network Connectivity Graph
@@ -37,39 +57,14 @@
       </menu> 
       <div id="sidebar" class=sidebar>
         <div id="selected-node">
-          <div class="actions">
-            <div class="action-btn-wrapper">
-              <button class="action-btn inline" id="power"><img width="30" src="./img/power.png"/></button>
-              <div class="icontext">Connect backend</div>
-            </div>
-            <div class="action-btn-wrapper">
-              <button class="action-btn inline" id="play"><img width="30" src="./img/play.png"/></button>
-              <div class="icontext">Start visualization</div>
-            </div>
-           <!-- 
-            <div class="action-btn-wrapper">
-              <button class="action-btn inline" id="pause"><img width="30" src="./img/pause.png"/></button>
-              <div class="icontext">Pause visualization</div>
-            </div>
-            -->
-            <div class="action-btn-spacer"></div>
-            <div class="action-btn-wrapper">
-              <button class="action-btn inline" id="pause"><img width="30" src="./img/snapshot.png"/></button>
-              <div class="icontext">Take a snapshot</div>
-            </div>
-           <!-- 
-            <div class="action-btn-wrapper">
-              <button class="action-btn inline" id="restore"><img width="30" src="./img/restore.png"/></button>
-              <div class="icontext">Restore snapshot</div>
-            </div>
-            -->
-            <div class="inline elapsed">Time elapsed: <span id="time-elapsed">00:00:00</span></div>
-          </div>
           <div class="label">
             Selected simulation: <div id="selected-simulation"></div>
           </div>
           <div class="actions">
             <input id="timemachine" style="display:none" type="range">
+          </div>
+          <div class="label">
+            <p onclick="showConnectionGraph()" class="link-action">Show connection graph </p>
           </div>
             <div class="counts">
               <h3>Nodes</h1>
@@ -126,13 +121,16 @@
       <div id="status-messages">
       </div>
       <div id="visualisation-wrapper">
-        <svg id="network-visualisation" width="780" height="780"></svg>
+        <svg id="network-visualisation"></svg>
       </div>
     </div>
     <div id="Overlay" name="Overlay" class="overlay">
       <div id="close" class="close" onclick="funcClose(this);">X</div>
     </div>
     <div id="select-mocker" name="select-mocker" class="ui-dialog">
+    </div>
+    <div id="connection-graph" class="ui-dialog">
+       <svg id="chord-diagram"></svg>
     </div>
     <div id="output-window">
       <label><input type="checkbox" checked="checked" id="showlogs" name="showlogs" value="true">Enable log console</label>

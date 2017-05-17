@@ -72,7 +72,7 @@ li.menuitem:hover {
 }
 
 #network-visualisation {
-  border: solid 1pt #2b2a2a;
+  /*border: solid 1pt #2b2a2a;*/
   width: 60vw;
   height: 90vh;
   padding: 0px;
@@ -189,7 +189,7 @@ input[type=range]:focus::-ms-fill-upper {
   width:30vw;
   float:left;
   margin: 10px 0px 10px 20px;  
-  border: solid 1pt #2b2a2a;
+  /*border: solid 1pt #2b2a2a;*/
   color: lightgrey;
   padding-left: 20px;
   padding-right: 20px;
@@ -253,8 +253,12 @@ input[type=range]:focus::-ms-fill-upper {
 .counts-table td{
   width:50px;
   text-align: center;
-  border: solid 1pt #2b2a2a;
+  /*border: solid 1pt #2b2a2a;*/
   padding:10px;
+}
+
+.counts-table tbody td {
+  color: #10a0de;
 }
 
 .counts-table thead td{
@@ -437,4 +441,44 @@ tr.selectelement td {
 
 line:hover {
   cursor: crosshair;
+}
+
+.monitor-indicator {
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  margin-top: 15px;
+  display: inline-block;
+}
+
+.backend-monitor {
+  display: inline-block;
+  width: 450px;
+}
+
+#backend-ok {
+  border: 1px solid green;
+  background-color: green;
+  display: none;
+}
+
+#backend-nok {
+  border: 1px solid red;
+  background-color: red;
+}
+
+.monitor-label {
+  font-size: 10px;
+  float: left;
+  margin-right: 6px;
+  line-height: 60px;
+}
+
+#connection-graph,
+#select-mocker {
+  visibility: hidden;
+}
+
+#chord-diagram {
+  background-color: #bbb;
 }

@@ -14,6 +14,8 @@ var currHistoryIndex = 0;
 var timemachine = false;
 var selectingTarget = false;
 var time_elapsed = new Date();
+var pollInterval = false;
+var connmatrix = [];
 
 
 var startTimer = function () {
@@ -91,7 +93,41 @@ $(document).ready(function() {
   });
 
   $('#selected-simulation').text(selectedSim);
+
+  //pollServer();
+  setVisualisationFrame();
 });
+
+function setVisualisationFrame() {
+  var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+  
+  var viswidth = x * 60 / 100;
+  var visheight = y * 85 / 100;
+  $("#network-visualisation").attr("width", viswidth);
+  $("#network-visualisation").attr("height", visheight);
+}
+
+function pollServer() {
+  pollInterval = setInterval(function() {
+  $.get(BACKEND_URL + "/alive").then(
+    function(d) {
+      console.log("Backend is running");
+      $("#backend-nok").hide();
+      $("#backend-ok").fadeIn().css('display', 'inline-block');
+    },
+    function(d) {
+      console.log("Backend is NOT running");
+      $("#backend-nok").show("slow");
+      $("#backend-ok").hide("slow");
+    }
+   );
+  }, 1000);
+}
 
 function setupEventStream() {
   eventSource = new EventSource(BACKEND_URL + '/networks/' + networkname + "/events");
@@ -175,6 +211,9 @@ function setupEventStream() {
     $('#pause').prop("disabled",true);
     $('#play').prop("disabled",true);
     $('#power').prop("disabled",false);
+    $("#backend-nok").show("slow");
+    $("#backend-ok").hide("slow");
+
     clearInterval(clockId);
   }
 }
@@ -206,6 +245,7 @@ function initializeServer(){
       //initializeMocker(networkname_);
       $(".elapsed").show();
       setupEventStream();
+      clearInterval(pollInterval);
     },
     function(e,s,err) {
       $("#error-messages").show();
@@ -217,6 +257,25 @@ function initializeServer(){
       console.log(e);
     })
 };
+
+function showConnectionGraph() {
+  putOverlay();
+  var chord = new P2PConnectionsDiagram();  
+  chord.setupDiagram();
+  var dialog = $("#connection-graph");
+  var diagram = $("#chord-diagram");
+  dialog.show("slow");
+  dialog.css({
+          'margin-left': -diagram.outerWidth() / 2 + 'px',
+          'margin-top':  -diagram.outerHeight() / 2 + 'px',
+          'visibility': "visible"
+  });
+  $('#close').css({
+          'left': dialog.position().left + dialog.outerWidth()/2 - 20 + 'px',
+          'top':  dialog.position().top  - dialog.outerHeight()/2 -20 + 'px'
+  });
+} 
+
 
 function selectMocker() {
   $.get(BACKEND_URL + "/networks/" + networkname + "/mock"). then(
@@ -257,7 +316,8 @@ function showSelectDialog() {
     dialog.append(dframe);
     dialog.css({
           'margin-left': -dialog.outerWidth() / 2 + 'px',
-          'margin-top':  -dialog.outerHeight() / 2 + 'px'
+          'margin-top':  -dialog.outerHeight() / 2 + 'px',
+          'visibility': "visible"
     });
     $('#close').css({
           'left': dialog.position().left + dialog.outerWidth()/2 - 20 + 'px',
