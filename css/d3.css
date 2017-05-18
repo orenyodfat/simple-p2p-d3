@@ -186,6 +186,7 @@ input[type=range]:focus::-ms-fill-upper {
   text-align: center;
   padding-top: 4px;
   margin-top: -5px;
+  opacity: 0.2;
 }
 
 .elapsed {
@@ -233,9 +234,9 @@ input[type=range]:focus::-ms-fill-upper {
 }
 
 .control-options {
-  padding: 10px 20px 6px;
   height: 40px;
   font-size: 0.8em;
+  margin-bottom: 10px;
 }
 
 .control-options .fa {
@@ -291,9 +292,8 @@ input[type=range]:focus::-ms-fill-upper {
   margin-top: 40px;
   height: 100px;
   text-align: center;
-  margin: 4px;
+  margin: 2px;
   float: left;
-  margin-top: 40px;
 }
 
 .two-counts {
@@ -302,6 +302,9 @@ input[type=range]:focus::-ms-fill-upper {
 
 .one-count {
   width: 20%;
+  float:right;
+  padding-right:0;
+  padding-left:0;
 }
 
 .counts table {
@@ -311,7 +314,6 @@ input[type=range]:focus::-ms-fill-upper {
 .counts td {
   height: 1.2em;
 }
-
 
 .count-labels {
   font-size: 0.8em;
@@ -337,6 +339,10 @@ input[type=range]:focus::-ms-fill-upper {
 
 .msg-counts {
   color: #07C288;
+}
+
+#msg-count {
+  margin-top:5px;
 }
 
 .counts-table td{
@@ -370,9 +376,24 @@ input[type=range]:focus::-ms-fill-upper {
   fill: red;
 }
 
+#selected-node {
+  display: inline-block;
+  width: 100%;
+}
+
 .node-bar {
-  display:none;
-  margin-top: 20px;
+  visibility: hidden;
+  font-size: 12px;
+}
+
+.node-display {
+  display: table-cell;
+  width: 30%;
+}
+
+.node-actions {
+  display: table-cell;
+  vertical-align: middle;
 }
 
 #error-messages {
@@ -391,9 +412,9 @@ input[type=range]:focus::-ms-fill-upper {
   padding-top: 6px;
 }
 
-.kademlia-info,
-.node-info {
+.kademlia-info {
   font-size: 12px;
+  font-family: "monospace";
 }
 
 .stale {
@@ -432,12 +453,8 @@ input[type=range]:focus::-ms-fill-upper {
   top: 80vh;
 }
 
-.visible {
-  opacity: 1;
-}
-
 .invisible {
-  opacity: 0.1;
+  display: none !important;
 }
 
 .overlay {
@@ -488,6 +505,7 @@ input[type=range]:focus::-ms-fill-upper {
   left: 50%;
   top: 50%;
   z-index: 1000;
+  background-color:#eff;
 }
 
 table.objectlist {
@@ -571,7 +589,6 @@ line:hover {
 }
 
 #chord-diagram {
-  background-color: #bbb;
 }
 
 .action-div {
@@ -582,6 +599,28 @@ line:hover {
   top: 10%;
   margin-left: 20px;
   border: 1px solid #777;
-  background-color: #777;
+  background-color: #303030;
   color: white;
+}
+
+.link-action {
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid #777;
+  background-color: #303030;
+  color: white;
+}
+
+/* Also use prefixes with @keyframes and animation to support current browsers */
+@keyframes blinker {  
+  from { visibility: visible }
+  to { visibility: hidden }
+}
+
+.paused{
+  animation: blinker steps(1) 500ms infinite alternate;
+}
+
+#show-conn-graph {
+  float: right;
 }

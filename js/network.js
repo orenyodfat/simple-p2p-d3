@@ -4,7 +4,7 @@ var m;
 var s = 0;;
 var clockId;
 var runViz = null;
-var pauseViz = false;
+//var pauseViz = false;
 var networkname = "0";
 var mockerlist  = [];
 var mockerlist_generated = false;
@@ -16,62 +16,71 @@ var selectingTarget = false;
 var time_elapsed = new Date();
 var pollInterval = false;
 var chord = false;
-
+var rec_messages = false;
 
 var startTimer = function () {
   clockId = setInterval(function(){
     s++;
     var temps= s%60;
     m = Math.floor(s/60);
-    var val = "" + m + ":" + (temps>9?"":"0") + temps;
+    h = Math.floor(m/60);
+    var val = "" + (h>9?"":"0") + h + ":" +(m>9?"":"0") + m + ":" + (temps>9?"":"0") + temps;
     $("#time-elapsed").text(val);
   },1000);
 };
 
+var resetTimer = function() {
+  $("#time-elapsed").text("00:00:00");
+  s=0;
+}
+
 var upnodes   = 0;
 var uplinks   = 0;
 
-var defaultSim = "default";
+var defaultSim  = "default";
 var selectedSim = defaultSim;
 
-var eventCounter = 0;
+var eventCounter      = 0;
+var msgCounter        = 0;
+var nodeAddCounter    = 0;
+var nodeRemoveCounter = 0;
+var connAddCounter    = 0;
+var connRemoveCounter = 0;
 
 $(document).ready(function() {
   
-  $('#pause').prop("disabled",true);
-  $('#play').prop("disabled",true);
-
   //click handlers
   $('#power').on('click',function(){ 
     initializeServer(networkname); 
-    $('#play').prop("disabled",false);
-    $('#power').prop("disabled",true);
   });
 
-  $('#play').on('click',function(){ 
-    if (pauseViz) {
-      pauseViz = false;
-      startTimer();
-      $("#status-messages").hide();
+  $('#stop').on('click',function(){ 
+    if ($(this).hasClass("fa-stop")) {
+      stopNetwork(); 
     } else {
-      startViz(); 
+      restartNetwork(); 
     }
-    $('#play').prop("disabled",true);
-    $('#pause').prop("disabled",false);
+    $("#status-messages").hide();
   });
 
   $("#pause").click(function() {
-    if (clockId != null) {
-      clearInterval(clockId);
-      eventSource.close();
-      $("#status-messages").text("Visualization Paused");
-      $("#status-messages").show();
-      $("#timemachine").show();
-      pauseViz = true;
-      $('#pause').prop("disabled",true);
-      $('#play').prop("disabled",false);
+      pauseNetwork();
+      //eventSource.close();
+      //$("#status-messages").text("Visualization Paused");
+      //$("#status-messages").show();
+      //$("#timemachine").show();
+      //pauseViz = true;
+      //$('#pause').prop("disabled",true);
+      //$('#play').prop("disabled",false);
 
-      setupTimemachine();
+      //setupTimemachine();
+  });
+
+  $("#rec-messages").change(function() {
+    if(this.checked) {
+      rec_messages = true;
+    } else {
+      rec_messages = false;
     }
   });
 
@@ -134,7 +143,6 @@ function pollServer() {
 function setupEventStream() {
   eventSource = new EventSource(BACKEND_URL + '/networks/' + networkname + "/events");
 
-
   eventSource.addEventListener("network", function(e) {
     var event = JSON.parse(e.data);
 
@@ -162,8 +170,12 @@ function setupEventStream() {
 
         if (event.node.up) {
           graph.add.push(el);
+          nodeAddCounter += 1;
+          $("#nodes-add-count").text(nodeAddCounter);
         } else {
           graph.remove.push(el);
+          nodeRemoveCounter += 1;
+          $("#nodes-remove-count").text(nodeRemoveCounter);
         }
 
         break;
@@ -182,13 +194,22 @@ function setupEventStream() {
 
         if (event.conn.up) {
           graph.add.push(el);
+          connAddCounter += 1;
+          $("#edges-add-count").text(connAddCounter);
         } else {
           graph.remove.push(el);
+          connRemoveCounter += 1;
+          $("#edges-remove-count").text(connRemoveCounter);
         }
 
         break;
 
       case "msg":
+        msgCounter += 1;
+        $("#msg-count").text(msgCounter);
+        if (!rec_messages) {
+          return;
+        }
         graph.message.push({
           group: "msgs",
           data: {
@@ -208,6 +229,9 @@ function setupEventStream() {
     //console.log(eventCounter);
   });
 
+  eventSource.onopen = function() {
+    startViz(); 
+  };
 
   eventSource.onerror = function() {
     $("#error-messages").show();
@@ -217,9 +241,10 @@ function setupEventStream() {
     $('#power').prop("disabled",false);
     $("#backend-nok").show("slow");
     $("#backend-ok").hide("slow");
+    $(".display .label").text("Disconnected");
 
     clearInterval(clockId);
-    console.log(new Date());
+    //console.log(new Date());
   }
 }
 
@@ -235,8 +260,12 @@ function startViz(){
       startTimer();
       setTimeout(function(){
         initializeVisualisationWithClass(networkname),1000
-      })
-      console.log(new Date());
+      });
+      $(".display .label").text("Simulation running");
+      //console.log(new Date());
+      $("#rec_messages").attr("disabled",true);
+      $("#stop").removeClass("invisible");
+      $("#pause").removeClass("invisible");
   }, function(e) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
@@ -245,6 +274,8 @@ function startViz(){
 
 function initializeServer(){
   $("#error-messages").hide();
+  $(".display").css({"opacity": "1"});
+  $(".display .label").text("Connecting with backend...");
   $.post(BACKEND_URL + "/networks", JSON.stringify({Id: networkname})).then(
     function(d){
       console.log("Backend POST init ok");
@@ -261,8 +292,84 @@ function initializeServer(){
       $('#pause').prop("disabled",true);
       console.log("Error sending POST to " + BACKEND_URL + "/networks");
       console.log(e);
-    })
+    });
 };
+
+function restartNetwork() {
+  /*
+  $.post(BACKEND_URL + "/networks/").then(
+    function(d){
+      startTimer();
+      $(".display .label").text("Simulation running");
+      $("#stop").removeClass("fa-play-circle");
+      $("#stop").addClass("fa-stop");
+      $("#show-conn-graph").hide();
+      $("#rec_messages").attr("disabled",true);
+    },
+    function(e,s,err) {
+      $("#error-messages").show();
+      $("#error-reason").text("Is the backend running?");
+      $('#power').prop("disabled",false);
+      $('#play').prop("disabled",true);
+      $('#pause').prop("disabled",true);
+      console.log("Error sending POST to " + BACKEND_URL + "/networks");
+      console.log(e);
+    });
+  */
+  $("#stop").addClass("fa-stop");
+  $("#stop").removeClass("fa-play-circle");
+  d3.select("#network-visualisation").selectAll("*").remove();
+  initializeServer();
+};
+
+function stopNetwork() {
+  $.ajax({
+    url: BACKEND_URL + "/networks/" + networkname,
+    type: "DELETE",
+    data: {},
+    contentType:'application/json',
+    dataType: 'text', 
+    success: function(d) {
+      eventSource.close();
+      clearInterval(clockId);
+      resetTimer();
+      $("#stop").removeClass("fa-stop");
+      $("#stop").addClass("fa-play-circle");
+      $("#show-conn-graph").removeClass("invisible");
+      $(".display .label").text("Simulation stopped. Network deleted.");
+      $("#rec_messages").attr("disabled",false);
+    },
+    error: function(d) {
+      $(".display .label").text("Failed to stop network!");
+    }
+  });
+}
+
+function pauseNetwork() {
+  if ($("#pause").hasClass("blinker")) {;
+    $.post(BACKEND_URL + "/networks/" + networkname + "/stop").then(
+      function(d) {
+        clearInterval(clockId);
+        $("#show-conn-graph").show();
+        $("#pause").addClass("blinker");
+        $(".display .label").text("Simulation paused. Network running.");
+      },
+      function(d) {
+        $(".display .label").text("Pausing simulation failed!");
+      });
+  } else {
+    $.post(BACKEND_URL + "/networks/" + networkname + "/start").then(
+      function(d) {
+        startTimer();
+        $("#show-conn-graph").hide();
+        $("#pause").removeClass("blinker");
+        $(".display .label").text("Simulation running.");
+      },
+      function(d) {
+        $(".display .label").text("Continuing simulation failed!");
+      });
+  }
+}
 
 function showConnectionGraph() {
   putOverlay();
@@ -270,6 +377,9 @@ function showConnectionGraph() {
   chord.setupDiagram(false);
   var dialog = $("#connection-graph");
   var diagram = $("#chord-diagram");
+  if (rec_messages) {
+    $("#toggle-chord").removeClass("invisible");
+  }
   dialog.show("slow");
   dialog.css({
           'margin-left': -diagram.outerWidth() / 2 + 'px',
@@ -280,6 +390,7 @@ function showConnectionGraph() {
           'left': dialog.position().left + dialog.outerWidth()/2 - 20 + 'px',
           'top':  dialog.position().top  - dialog.outerHeight()/2 -20 + 'px'
   });
+
 } 
 
 
@@ -419,19 +530,20 @@ function updateVisualisationWithClass(graph) {
   //down connections 
   var removeLinks = getGraphLinks($(graph.remove));
 
-  visualisation.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks); 
-
-  var triggerMsgs = $(graph.message)
-      .map(function(i,e){
-        return {
-          id: e.data.id,
-          source: e.data.source,
-          target: e.data.target,
-          group: 1,
-          value: i
-        };
-      })
-      .toArray();
+  var triggerMsgs = false;
+  if (rec_messages) { 
+    triggerMsgs = $(graph.message)
+        .map(function(i,e){
+          return {
+            id: e.data.id,
+            source: e.data.source,
+            target: e.data.target,
+            group: 1,
+            value: i
+          };
+        })
+        .toArray();
+  } 
 
   self.visualisation.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs);
 };

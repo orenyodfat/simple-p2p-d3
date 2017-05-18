@@ -23,19 +23,23 @@
           <img src="img/swarm-logo-horizontal.png"/>
           <img src="img/swarm-text.png"/>
         </div>
+        <!-- Currently disabled
         <div class="backend-monitor">
           <div class="monitor-label">Backend connection status</div>
           <div class="monitor-indicator" id="backend-ok"></div>
           <div class="monitor-indicator" id="backend-nok"></div>
         </div>
+        -->
         <div class="title">
           p2p Network Connectivity Graph
         </div>
+        <!-- Currently disabled
         <div class="menu" onclick="showMenu()">
           <div class="bar1"></div>
           <div class="bar2"></div>
           <div class="bar3"></div>
         </div>
+        -->
       </header>
       <menu>
        <ul class="mainmenu">
@@ -43,102 +47,78 @@
        </ul>  
       </menu> 
       <div id="sidebar" class=sidebar>
-        <div id="selected-node">
-          <div class="controls">
-            <i id="power" class="fa fa-power-off" aria-hidden="true"></i>
-            <i id="play" class="fa fa-play-circle" aria-hidden="true"></i>
-            <i id="pause" class="fa fa-pause" aria-hidden="true"></i>
-            <div class="display">
-              <div class="elapsed">Time elapsed: <span id="time-elapsed">00:00:00</span></div>
-              <div class="label">
-                Selected simulation: <div id="selected-simulation"></div>
-              </div>
-            </div>
-          </div>
-          <div class="actions">
-            <input id="timemachine" style="display:none" type="range">
-          </div>
-          <div class="control-options">
-            <div onclick="showConnectionGraph()" class="link-action">Show connection graph </div>
-            <input type="checkbox" class="link-action"/>Record message events
-            <i id="info-message-events" class="fa info-circle" aria-hidden="true"></i>
-          </div>
-          <div class="two-counts counts">
-            <table>
-              <thead>
-                <td width="20%" class="node-counts"></td>
-                <td width="40%" class="count-type node-counts">Nodes</td>
-                <td width="40%" class="count-type conn-counts">Connections</td>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="count-labels">Up</td>
-                  <td id="nodes-up-count"    class="node-counts"></td>
-                  <td id="edges-up-count"    class="conn-counts"></td>
-                </tr>
-                <tr>
-                  <td class="count-labels">Added</td>
-                  <td id="nodes-add-count"    class="node-counts"></td>
-                  <td id="edges-add-count"    class="conn-counts"></td>
-                </tr>
-                <tr>
-                  <td class="count-labels">Removed</td>
-                  <td id="nodes-remove-count"    class="node-counts"></td>
-                  <td id="edges-remove-count"    class="conn-counts"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="one-count counts msg-counts">
-            <div class="count-type">
-                Messages
-            </div>
-            <div id="messages-up-count">
-            </div>
-          </div>
-
+        <div class="controls">
+          <i id="power" class="fa fa-power-off" aria-hidden="true"></i>
+          <!--
+          <i id="play" class="fa fa-play-circle" aria-hidden="true"></i>
+          -->
+          <i id="stop" class="invisible fa fa-stop" aria-hidden="true"></i>
+          <i id="pause" class="invisible fa fa-pause" aria-hidden="true"></i>
+          <div class="display">
+            <div class="elapsed">Time elapsed: <span id="time-elapsed">00:00:00</span></div>
+            <div class="label">
               <!--
-              <h3>Nodes</h1>
-              <table class="node-counts counts-table">
-                <thead>
-                  <td>UP</td>
-                  <td>ADD</td>
-                  <td>REMOVE</td>
-                </thead>
-                <tbody>
-                  <td id="nodes-up-count"></td>
-                  <td id="nodes-add-count"></td>
-                  <td id="nodes-remove-count"></td>
-                </tbody>
-              </table>
-            <div class="counts clear">
-              <h3>Connections</h1>
-              <table class="edge-counts counts-table">
-                <thead>
-                  <td>UP</td>
-                  <td>ADD</td>
-                  <td>REMOVE</td>
-                </thead>
-                <tbody>
-                  <td id="edges-up-count"></td>
-                  <td id="edges-add-count"></td>
-                  <td id="edges-remove-count"></td>
-                </tbody>
-              </table>
-            </div>
+              Selected simulation: <div id="selected-simulation"></div>
               -->
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <input id="timemachine" style="display:none" type="range">
+        </div>
+        <div class="control-options">
+          <input id="rec-messages" type="checkbox" class="link-action"/>Record message events
+          <button id="show-conn-graph" onclick="showConnectionGraph()" class="invisible link-action">Show connection graph </button>
+          <i id="info-message-events" class="fa info-circle" aria-hidden="true"></i>
+        </div>
+        <div class="two-counts counts">
+          <table>
+            <thead>
+              <td width="20%" class="node-counts"></td>
+              <td width="40%" class="count-type node-counts">Nodes</td>
+              <td width="40%" class="count-type conn-counts">Connections</td>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="count-labels">Up</td>
+                <td id="nodes-up-count"    class="node-counts">0</td>
+                <td id="edges-up-count"    class="conn-counts">0</td>
+              </tr>
+              <tr>
+                <td class="count-labels">Added</td>
+                <td id="nodes-add-count"    class="node-counts">0</td>
+                <td id="edges-add-count"    class="conn-counts">0</td>
+              </tr>
+              <tr>
+                <td class="count-labels">Removed</td>
+                <td id="nodes-remove-count"    class="node-counts">0</td>
+                <td id="edges-remove-count"    class="conn-counts">0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="one-count counts msg-counts">
+          <div class="count-type">
+              Messages
+          </div>
+          <div id="msg-count">0
+          </div>
+        </div>
 
+        <div id="selected-node">
           <div class="node-bar">
-            <div class="node-info">
-              <h3>Node Information</h1>
-              <br/>ID: <span id="node-id"></span> 
+            <h3>Node Information</h1>
+            <div class="node-display">
+              ID: <span id="node-id"></span> 
               <br/>Index: <span id="node-index"></span> 
+            </div>
+            <div class="node-actions">
               <input type="hidden" id="target-id"/>
               <input type="hidden" id="full-node-id"/>
               <button type="button" class="nodeactions" onclick="killNode()">Stop this node</button>
               <button type="button" class="nodeactions" onclick="connectTo()">Connect this node to peer:</button>
-              <pre id="node-kademlia-table" class="kademlia-info"></pre>              
             </div>
+            <pre id="node-kademlia-table" class="kademlia-info"></pre>              
           </div>
         </div>
       </div>
@@ -161,7 +141,7 @@
     </div>
     <div id="connection-graph" class="ui-dialog">
        <svg id="chord-diagram"></svg>
-       <div class="action-div" onclick="toggleChord()" id="toggle-chord">Show message graph</div>
+       <div class="invisible action-div" onclick="toggleChord()" id="toggle-chord">Show message graph</div>
     </div>
     <div id="output-window">
       <label><input type="checkbox" checked="checked" id="showlogs" name="showlogs" value="true">Enable log console</label>

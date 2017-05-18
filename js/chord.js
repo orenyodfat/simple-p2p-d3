@@ -12,20 +12,23 @@ class P2PConnectionsDiagram {
       x = w.innerWidth || e.clientWidth || g.clientWidth,
       y = w.innerHeight|| e.clientHeight|| g.clientHeight;
     
-    var viswidth = x * 80 / 100;
-    var visheight = y * 80 / 100;
+    var viswidth = x * 60 / 100;
+    var visheight = y * 90 / 100;
     $("#chord-diagram").attr("width", viswidth);
     $("#chord-diagram").attr("height", visheight);
     this.svg = d3.select("#chord-diagram");
     this.width = +this.svg.attr("width");
     this.height = +this.svg.attr("height");
-    this.outerRadius = Math.min(this.width, this.height) * 0.5 - 40;
+    this.outerRadius = Math.min(this.width, this.height) * 0.5 - 100;
     this.innerRadius = this.outerRadius - 30;
   }
 
   setupDiagram() {
+    var self = this;
     var matrix = this.buildMatrix(this.messageGraph);
     var formatValue = d3.formatPrefix(",.0", 1e3);
+    var rotation = 0.99;
+    var offset = Math.PI * rotation;
 
     var chord = d3.chord()
     .padAngle(0.05)
@@ -61,15 +64,18 @@ class P2PConnectionsDiagram {
       .on("mouseout", fade(1));
 
     group.append("text")
-        .attr("x", 6)
-        .attr("dy", 15)
-        //.attr("text-anchor", "end")
-        //.attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + this.outerRadius + ",0)"; })
-        //.filter(function(d) { return d.value > 110; })
-        .append("textPath")
-        .attr("xlink:href", function(d) { return "#group" + d.index })
-        //.text(function(d) { return "hallo"});
+        //.attr("x", 6)
+        //.attr("dy", 15)
+        //.append("textPath")
+        //.attr("xlink:href", function(d) { return "#group" + d.index })
+        //.text(function(d) { return nodeShortLabel(visualisation.sources[d.index])});
+        .each(function(d) {d.angle = (d.startAngle + d.endAngle) / 2  })
+        .attr("dy", ".35em")
+        .attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; }) 
+        .attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + (self.outerRadius+10) + ")" + (d.angle > Math.PI ? "rotate(180)" : ""); })
         .text(function(d) { return nodeShortLabel(visualisation.sources[d.index])});
+        //.filter(function(d) { return d.value > 110; })
+        //.text(function(d) { return "hallo"});
 
     var self = this;
 
