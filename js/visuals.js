@@ -11,7 +11,7 @@ class P2Pd3Sidebar {
       .classed("stale",false);
 
     var selectedNode = $(this.sidebar).find('#selected-node');
-    $(".node-bar").show();
+    $(".node-bar").css({"visibility":"visible"});
     selectedNode.addClass('node-selected');
     selectedNode.find('#full-node-id').val(data.id);
     selectedNode.find('#node-id').html(nodeShortLabel(data.id));
@@ -44,22 +44,20 @@ class P2Pd3Sidebar {
     //console.log(newNodes);
     upnodes += newNodes.length;
     $("#nodes-up-count").text(upnodes);
-    $("#nodes-add-count").text(newNodes.length);
+    //$("#nodes-add-count").text(newNodes.length);
 
     //console.log(newLinks);
-
     uplinks += newLinks.length;
     $("#edges-up-count").text(uplinks);
-    $("#edges-add-count").text(newLinks.length);
+    //$("#edges-add-count").text(newLinks.length);
 
     //console.log(removeNodes);
 
     upnodes -= removeNodes.length;
     $("#nodes-up-count").text(upnodes);
-    $("#nodes-remove-count").text(removeNodes.length);
+    //$("#nodes-remove-count").text(removeNodes.length);
 
     //console.log(removeLinks);
-
     /*
     for (var i=0; i<removeLinks.length; i++) {
       if (this.visualisation.connsById[removeLinks[i].id]) {
@@ -70,7 +68,7 @@ class P2Pd3Sidebar {
     */
     uplinks -= removeLinks.length;
     $("#edges-up-count").text(uplinks);
-    $("#edges-remove-count").text(removeLinks.length);
+    //$("#edges-remove-count").text(removeLinks.length);
   }
 
   formatNodeHTML(str) {
@@ -172,6 +170,8 @@ class P2Pd3 {
     //for convenience; this may (or should) be "merged" with graphNodes
     this.nodesById = {};
     this.connsById = {};
+    this.connCounter = {};
+    this.sources = [];
 
     this.skipCollectionSetup = false;
 
@@ -267,10 +267,13 @@ class P2Pd3 {
 
   updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs) {
     var self = this;
+
+    this.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks, triggerMsgs);
 	
   	this.updatecount++;
     this.nodesChanged = false;
     this.linksChanged = false;
+    this.animateMessages = false;
 	
     this.appendNodes(newNodes);
     this.removeNodes(removeNodes);
@@ -341,7 +344,7 @@ class P2Pd3 {
 
     this.linkCollection.attr("stroke-width", function(d) { return 1.5 + ((parseInt(self.connsById[d.id].msgCount / 3) -1) / 2)  }); //increase in steps of 0.5
 
-    if (this.msg.length) {
+    if (this.animateMessages && this.msg.length) {
       var self = this;
       this.msgCollection = this.linkCollection.filter(function(n) {
         return self.msg[0].id == n.id;
@@ -450,6 +453,15 @@ class P2Pd3 {
       this.connsById[id].target   = links[i].target;
       this.connsById[id].source   = links[i].source;
       this.connsById[id].msgCount = 0;
+      if (! this.connCounter[id]) {
+        this.connCounter[id] = {};
+        this.connCounter[id].msgCount = 0;
+        this.connCounter[id].connCount= 0;
+      };
+      this.connCounter[id].connCount += 1;
+      if (this.sources.indexOf(links[i].source) == -1) {
+        this.sources.push(links[i].source);
+      }
     }
     this.graphLinks = this.graphLinks.concat(links);
     console.log("ADD connection, source: " + source+ " - target: " + target );
@@ -503,12 +515,13 @@ class P2Pd3 {
   }
   
 	processMsgs(msgs){
-    if (!msgs.length) { return msgs }
+    if (!msgs || !msgs.length) { return msgs }
 
     for (var i=0;i<msgs.length;i++) {
       var id = msgs[i].id;
       if (this.connsById[id]) {
         this.connsById[id].msgCount += 1;
+        this.connCounter[id].msgCount += 1;
       } else {
         console.log("WARN: got message for connection which does not exist in simulation!");
       }
