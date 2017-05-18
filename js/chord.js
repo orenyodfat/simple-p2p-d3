@@ -1,11 +1,10 @@
 class P2PConnectionsDiagram {
-  constructor() {
+  constructor(messageGraph) {
+    this.messageGraph = messageGraph;
+    this.setupSvg();
   }
 
-  setupDiagram() {
-
-    var matrix = this.buildMatrix();
-
+  setupSvg() {
     var w = window,
       d = document,
       e = d.documentElement,
@@ -17,42 +16,41 @@ class P2PConnectionsDiagram {
     var visheight = y * 80 / 100;
     $("#chord-diagram").attr("width", viswidth);
     $("#chord-diagram").attr("height", visheight);
-    var svg = d3.select("#chord-diagram"),
-      width = +svg.attr("width"),
-      height = +svg.attr("height"),
-      outerRadius = Math.min(width, height) * 0.5 - 40,
-      innerRadius = outerRadius - 30;
+    this.svg = d3.select("#chord-diagram");
+    this.width = +this.svg.attr("width");
+    this.height = +this.svg.attr("height");
+    this.outerRadius = Math.min(this.width, this.height) * 0.5 - 40;
+    this.innerRadius = this.outerRadius - 30;
+  }
 
-
+  setupDiagram() {
+    var matrix = this.buildMatrix(this.messageGraph);
     var formatValue = d3.formatPrefix(",.0", 1e3);
 
     var chord = d3.chord()
     .padAngle(0.05)
     .sortSubgroups(d3.descending);
 
-
     var arc = d3.arc()
-    .innerRadius(innerRadius)
-    .outerRadius(outerRadius);
+    .innerRadius(this.innerRadius)
+    .outerRadius(this.outerRadius);
 
     var ribbon = d3.ribbon()
-    .radius(innerRadius)
+    .radius(this.innerRadius)
 
     var color = d3.scaleOrdinal()
     .domain(d3.range(4))
     .range(["#000000", "#FFDD89", "#957244", "#F26223"]);
 
-    var g = svg.append("g")
-    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
+    var g = this.svg.append("g")
+    .attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")")
     .datum(chord(matrix));
-
 
     var group = g.append("g")
       .attr("class", "groups")
       .selectAll("g")
       .data(function(chords) { return chords.groups; })
       .enter().append("g");
-      
 
     group.append("path")
       .style("fill", function(d) { return color(d.index); })
@@ -66,7 +64,7 @@ class P2PConnectionsDiagram {
         .attr("x", 6)
         .attr("dy", 15)
         //.attr("text-anchor", "end")
-        //.attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + outerRadius + ",0)"; })
+        //.attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + this.outerRadius + ",0)"; })
         //.filter(function(d) { return d.value > 110; })
         .append("textPath")
         .attr("xlink:href", function(d) { return "#group" + d.index })
@@ -79,7 +77,7 @@ class P2PConnectionsDiagram {
       .data(function(d) { return self.groupTicks(d, 1e3); })
       .enter().append("g")
       .attr("class", "group-tick")
-      //.attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + outerRadius + ",0)"; });
+      //.attr("transform", function(d) { return "rotate(" + (d.angle * 180 / Math.PI - 90) + ") translate(" + this.outerRadius + ",0)"; });
 
     groupTick.append("line")
       .attr("x2", 6);
@@ -114,7 +112,7 @@ class P2PConnectionsDiagram {
   }
 
 
-  buildMatrix() {
+  buildMatrix(messageGraph) {
     var matrix = [];
     visualisation.sources.sort();
     for (var i=0; i< visualisation.sources.length; i++) {
@@ -125,11 +123,24 @@ class P2PConnectionsDiagram {
       var tgt = visualisation.connsById[id].target;
       var i = visualisation.sources.indexOf(src);
       var j = visualisation.sources.indexOf(tgt);
-      matrix[i][j] = visualisation.connCounter[id].connCount;
+      if (messageGraph) {
+        if (visualisation.connCounter[id].msgCount) {
+          matrix[i][j] = visualisation.connCounter[id].msgCount;
+        } else {
+          matrix[i][j] = 0;
+        }
+      } else {
+        matrix[i][j] = visualisation.connCounter[id].connCount;
+      }
     }
 
     return matrix;
   }
+
+  clear() {
+    d3.select("#chord-diagram").selectAll("*").remove();
+  }
+
 }
 
 /** Returns an event handler for fading a given chord group. */
@@ -144,3 +155,14 @@ function fade(opacity) {
   };
 }
 
+
+function toggleChord() {
+  chord.messageGraph = !chord.messageGraph;
+  chord.clear();
+  chord.setupDiagram(chord.messageGraph);
+  if (chord.messageGraph) {
+      $('#toggle-chord').text("Show connection graph");
+  } else {
+      $('#toggle-chord').text("Show messages graph");
+  }
+}

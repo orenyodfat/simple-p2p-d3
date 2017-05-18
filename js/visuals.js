@@ -273,6 +273,7 @@ class P2Pd3 {
   	this.updatecount++;
     this.nodesChanged = false;
     this.linksChanged = false;
+    this.animateMessages = false;
 	
     this.appendNodes(newNodes);
     this.removeNodes(removeNodes);
@@ -343,7 +344,7 @@ class P2Pd3 {
 
     this.linkCollection.attr("stroke-width", function(d) { return 1.5 + ((parseInt(self.connsById[d.id].msgCount / 3) -1) / 2)  }); //increase in steps of 0.5
 
-    if (this.msg.length) {
+    if (this.animateMessages && this.msg.length) {
       var self = this;
       this.msgCollection = this.linkCollection.filter(function(n) {
         return self.msg[0].id == n.id;

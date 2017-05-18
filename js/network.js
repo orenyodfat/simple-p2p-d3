@@ -15,7 +15,7 @@ var timemachine = false;
 var selectingTarget = false;
 var time_elapsed = new Date();
 var pollInterval = false;
-var connmatrix = [];
+var chord = false;
 
 
 var startTimer = function () {
@@ -33,6 +33,8 @@ var uplinks   = 0;
 
 var defaultSim = "default";
 var selectedSim = defaultSim;
+
+var eventCounter = 0;
 
 $(document).ready(function() {
   
@@ -201,7 +203,9 @@ function setupEventStream() {
         break;
 
     }
+    eventCounter++;
     updateVisualisationWithClass(graph);
+    //console.log(eventCounter);
   });
 
 
@@ -215,6 +219,7 @@ function setupEventStream() {
     $("#backend-ok").hide("slow");
 
     clearInterval(clockId);
+    console.log(new Date());
   }
 }
 
@@ -231,6 +236,7 @@ function startViz(){
       setTimeout(function(){
         initializeVisualisationWithClass(networkname),1000
       })
+      console.log(new Date());
   }, function(e) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
@@ -260,8 +266,8 @@ function initializeServer(){
 
 function showConnectionGraph() {
   putOverlay();
-  var chord = new P2PConnectionsDiagram();  
-  chord.setupDiagram();
+  chord = new P2PConnectionsDiagram();  
+  chord.setupDiagram(false);
   var dialog = $("#connection-graph");
   var diagram = $("#chord-diagram");
   dialog.show("slow");
