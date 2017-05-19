@@ -436,7 +436,7 @@ input[type=range]:focus::-ms-fill-upper {
   width: 100%;
   top: 98vh; 
   bottom: 0;
-  overflow: hidden;
+  overflow: auto;
   transition: all 1s;
   position: absolute;
   font-size: 10px;
@@ -545,10 +545,6 @@ tr.selectelement td {
   display: inline-block;
 }
 
-line:hover {
-  cursor: crosshair;
-}
-
 .monitor-indicator {
   border-radius: 50%;
   width: 30px;
@@ -610,14 +606,27 @@ line:hover {
 
 /* Also use prefixes with @keyframes and animation to support current browsers */
 @keyframes blinker {  
-  from { visibility: visible }
   to { visibility: hidden }
 }
 
-.paused{
-  animation: blinker steps(1) 500ms infinite alternate;
+@-webkit-keyframes blinker {
+  to {
+    visibility: hidden;
+  }
+}
+
+.paused {
+  animation: blinker 1s steps(5, start) 1s infinite;;
 }
 
 #show-conn-graph {
   float: right;
+}
+
+circle {
+  cursor: pointer;
+}
+
+line {
+  z-index: 10;
 }
