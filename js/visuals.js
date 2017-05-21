@@ -106,6 +106,11 @@ class P2Pd3Sidebar {
   }
 }
 
+function killLink() {
+  selectDisconnect = true;
+  $("body").css({"cursor": "crosshair"});
+}
+
 function killNode() {
   var node = $('#full-node-id').val();
   $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + node + "/stop").then(
@@ -154,6 +159,8 @@ function disconnectLink(id) {
       console.log("it didn't work");
     }
   });
+  selectDisconnect = false;
+  $("body").css({"cursor": "default"});
 }
 
 
@@ -181,7 +188,7 @@ class P2Pd3 {
   }
 
   linkDistance(d) {
-    return Math.floor(Math.random() * 11) + 160;
+    return Math.floor(Math.random() * 11) + 400;
   }
 
   // increment callback function during simulation
@@ -195,8 +202,6 @@ class P2Pd3 {
 
     node
         .attr("cx", function(d) { return d.x = Math.max(self.nodeRadius, Math.min(self.width - self.nodeRadius, d.x)); })
-        //.attr("cx", function(d) { return d.x; })
-        //.attr("cy", function(d) { return d.y; });
         .attr("cy", function(d) { return d.y = Math.max(self.nodeRadius, Math.min(self.height - self.nodeRadius, d.y)) });
   }
 
@@ -219,8 +224,6 @@ class P2Pd3 {
   } 
   // end event callbacks
 
-
-
   initialize() {
     if (this.initialized) {
       return;
@@ -229,7 +232,7 @@ class P2Pd3 {
 
     var simulation = this.simulation = d3.forceSimulation(self.graphNodes)
         .force("link", d3.forceLink().id(function(d) { return d.id; }))
-        .force("charge", d3.forceManyBody(-10))
+        .force("charge", d3.forceManyBody(+10))
         .force("center", d3.forceCenter(self.width / 2, self.height / 2))
         //.force("x", d3.forceX())
         //.force("y", d3.forceY())
@@ -238,8 +241,8 @@ class P2Pd3 {
         .on("tick", function(){ self.ticked(self.linkCollection, self.nodeCollection) });
 
     if (!this.skipCollectionSetup) {
-      this.setupNodes();
       this.setupLinks();
+      this.setupNodes();
     }
 
     simulation.force("link")
@@ -250,18 +253,17 @@ class P2Pd3 {
     this.initialized = true;
   }
 
+  setupLinks(){
+    this.linkCollection = this.svg.append("g")
+        .attr("class", "links")
+        .selectAll(".link");
+  }
 
   setupNodes() {
     this.nodeCollection = this.svg.append("g")
         .attr("class", "nodes")
         .attr("stroke", "#fff").attr("stroke-width", 1.5)
         .selectAll(".node");
-  }
-
-  setupLinks(){
-    this.linkCollection = this.svg.append("g")
-        .attr("class", "links")
-        .selectAll(".link");
   }
 
 
@@ -294,6 +296,25 @@ class P2Pd3 {
   restartSimulation() {
     // Update and restart the simulation.
     var self = this;
+    if (this.linksChanged) {
+      // Apply the general update pattern to the links.
+      this.linkCollection = this.linkCollection.data(this.graphLinks);
+      this.linkCollection.exit().remove();
+      this.linkCollection = this.linkCollection
+          .enter()
+          .append("line")
+          .attr("stroke", "#808080")
+          .attr("stroke-width", 1.5)
+          .on("click", function(d) {
+            if (selectDisconnect) {
+             disconnectLink(d.id);
+            }
+          })
+          .merge(this.linkCollection);
+    }
+
+    //this.linkCollection.attr("stroke-width", function(d) { return 1.5 + ((parseInt(self.connsById[d.id].msgCount / 3) -1) / 2)  }); //increase in steps of 0.5
+
     // Apply the general update pattern to the nodes.
     if (this.nodesChanged) {
       this.nodeCollection = this.nodeCollection.data(this.graphNodes);
@@ -327,22 +348,6 @@ class P2Pd3 {
           .merge(this.nodeCollection);
     }
 
-    if (this.linksChanged) {
-      // Apply the general update pattern to the links.
-      this.linkCollection = this.linkCollection.data(this.graphLinks);
-      this.linkCollection.exit().remove();
-      this.linkCollection = this.linkCollection
-          .enter()
-          .append("line")
-          .attr("stroke", "#808080")
-          .attr("stroke-width", 1.5)
-          .on("click", function(d) {
-            disconnectLink(d.id);
-          })
-          .merge(this.linkCollection);
-    }
-
-    this.linkCollection.attr("stroke-width", function(d) { return 1.5 + ((parseInt(self.connsById[d.id].msgCount / 3) -1) / 2)  }); //increase in steps of 0.5
 
     if (this.animateMessages && this.msg.length) {
       var self = this;

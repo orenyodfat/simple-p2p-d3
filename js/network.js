@@ -17,6 +17,7 @@ var time_elapsed = new Date();
 var pollInterval = false;
 var chord = false;
 var rec_messages = false;
+var selectDisconnect= false;
 
 var startTimer = function () {
   clockId = setInterval(function(){
@@ -323,6 +324,8 @@ function restartNetwork() {
 };
 
 function stopNetwork() {
+  $(".display .label").text("Stop network: waiting for backend...");
+  $("#stop").addClass("stale");
   $.ajax({
     url: BACKEND_URL + "/networks/" + networkname,
     type: "DELETE",
@@ -338,35 +341,44 @@ function stopNetwork() {
       $("#show-conn-graph").removeClass("invisible");
       $(".display .label").text("Simulation stopped. Network deleted.");
       $("#rec_messages").attr("disabled",false);
+      $("#stop").removeClass("stale");
     },
     error: function(d) {
       $(".display .label").text("Failed to stop network!");
+      $("#stop").removeClass("stale");
     }
   });
 }
 
 function pauseNetwork() {
-  if ($("#pause").hasClass("blinker")) {;
-    $.post(BACKEND_URL + "/networks/" + networkname + "/stop").then(
-      function(d) {
-        clearInterval(clockId);
-        $("#show-conn-graph").show();
-        $("#pause").addClass("blinker");
-        $(".display .label").text("Simulation paused. Network running.");
-      },
-      function(d) {
-        $(".display .label").text("Pausing simulation failed!");
-      });
-  } else {
+  $(".display .label").text("Pause network: waiting for backend...");
+  $("#pause").addClass("stale");
+  if ($("#pause").hasClass("paused")) {
+    d3.select("#network-visualisation").selectAll("circle").remove();
     $.post(BACKEND_URL + "/networks/" + networkname + "/start").then(
       function(d) {
         startTimer();
-        $("#show-conn-graph").hide();
-        $("#pause").removeClass("blinker");
+        $("#show-conn-graph").addClass("invisible");
+        $("#pause").removeClass("paused");
         $(".display .label").text("Simulation running.");
+        $("#pause").removeClass("stale");
       },
       function(d) {
         $(".display .label").text("Continuing simulation failed!");
+        $("#pause").removeClass("stale");
+      });
+  } else {
+    $.post(BACKEND_URL + "/networks/" + networkname + "/stop").then(
+      function(d) {
+        clearInterval(clockId);
+        $("#show-conn-graph").removeClass("invisible");
+        $("#pause").addClass("paused");
+        $(".display .label").text("Simulation paused. Network running.");
+        $("#pause").removeClass("stale");
+      },
+      function(d) {
+        $(".display .label").text("Pausing simulation failed!");
+        $("#pause").removeClass("stale");
       });
   }
 }
