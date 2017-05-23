@@ -277,31 +277,29 @@ input[type=range]:focus::-ms-fill-upper {
 }
 
 .counts {
-  /*
-  float:left;
-  width:46%;
-  padding-right:4%;
-  margin-bottom:20px;
-  */
   padding: 10px;
   background-color: #303030;
   display: inline-block;
   margin-top: 40px;
-  height: 100px;
   text-align: center;
   margin: 2px;
   float: left;
 }
 
-.two-counts {
-  width: 70%;
+.subcount {
+  font-size: 0.7em;
+  text-align: left;
 }
 
-.one-count {
-  width: 20%;
-  float:right;
-  padding-right:0;
-  padding-left:0;
+.count-label {
+  color: whitesmoke;
+  display: inline-block;
+  width: 80px;
+  margin: 0;
+}
+  
+.count-value {
+  display: inline-block;
 }
 
 .counts table {
@@ -312,18 +310,13 @@ input[type=range]:focus::-ms-fill-upper {
   height: 1.2em;
 }
 
-.count-labels {
-  font-size: 0.8em;
-  text-align: right;
-}
-
-.count-values {
-  font-size: 2em;
-}
-
 .counts h4 {
   margin: 0;
   padding: 0;
+}
+
+.up-count {
+ font-size: 3em;
 }
 
 .node-counts {
@@ -339,7 +332,7 @@ input[type=range]:focus::-ms-fill-upper {
 }
 
 #msg-count {
-  margin-top:5px;
+  margin-top:8px;
 }
 
 .counts-table td{
@@ -385,11 +378,10 @@ input[type=range]:focus::-ms-fill-upper {
 
 .node-display {
   display: table-cell;
-  width: 30%;
 }
 
 .node-actions {
-  display: table-cell;
+  margin-top: 6px;
   vertical-align: middle;
 }
 
@@ -410,7 +402,7 @@ input[type=range]:focus::-ms-fill-upper {
 }
 
 .kademlia-info {
-  font-size: 12px;
+  font-size: 0.8em;
   font-family: "monospace";
 }
 
@@ -434,7 +426,7 @@ input[type=range]:focus::-ms-fill-upper {
 
 #output-window {
   width: 100%;
-  top: 98vh; 
+  top: 95vh; 
   bottom: 0;
   overflow: auto;
   transition: all 1s;
@@ -448,6 +440,11 @@ input[type=range]:focus::-ms-fill-upper {
 
 #output-window.closepane {
   top: 80vh;
+}
+
+#log-console {
+  padding: 8px;
+  line-height: 1.2em;
 }
 
 .invisible {
@@ -520,6 +517,12 @@ tr.selectelement td {
   background-color: #f69047;
   color: #111;
   border: none;
+  cursor: pointer;
+}
+
+.insvg {
+  float:left;
+  margin: 25px 0 0 120px; 
 }
 
 @keyframes highlight {
@@ -630,3 +633,4 @@ circle {
 line {
   z-index: 10;
 }
+

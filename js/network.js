@@ -1,23 +1,41 @@
 var BACKEND_URL='http://localhost:8888';
 
-var m;
-var s = 0;;
+var m = 0;
+var s = 0;
 var clockId;
-var runViz = null;
-//var pauseViz = false;
-var networkname = "0";
-var mockerlist  = [];
-var mockerlist_generated = false;
-var eventSource = null;
-var eventHistory = [];
-var currHistoryIndex = 0;
-var timemachine = false;
-var selectingTarget = false;
-var time_elapsed = new Date();
-var pollInterval = false;
-var chord = false;
-var rec_messages = false;
-var selectDisconnect= false;
+
+var networkname           = "0";
+
+var mockerlist            = [];
+var mockerlist_generated  = false;
+var defaultSim            = "default";
+var selectedSim           = defaultSim;
+
+var eventSource           = null;
+var eventHistory          = [];
+var currHistoryIndex      = 0;
+var time_elapsed          = new Date();
+var timemachine           = false;
+
+var selectingTarget       = false;
+var pollInterval          = false;
+var chord                 = false;
+var rec_messages          = false;
+var selectDisconnect      = false;
+var selectionActive       = false;
+
+//counters
+var upnodes               = 0;
+var uplinks               = 0;
+
+var eventCounter          = 0;
+var msgCounter            = 0;
+var nodeAddCounter        = 0;
+var nodeRemoveCounter     = 0;
+var connAddCounter        = 0;
+var connRemoveCounter     = 0;
+
+
 
 var startTimer = function () {
   clockId = setInterval(function(){
@@ -35,18 +53,6 @@ var resetTimer = function() {
   s=0;
 }
 
-var upnodes   = 0;
-var uplinks   = 0;
-
-var defaultSim  = "default";
-var selectedSim = defaultSim;
-
-var eventCounter      = 0;
-var msgCounter        = 0;
-var nodeAddCounter    = 0;
-var nodeRemoveCounter = 0;
-var connAddCounter    = 0;
-var connRemoveCounter = 0;
 
 $(document).ready(function() {
   
@@ -259,9 +265,6 @@ function startViz(){
   $.post(BACKEND_URL + "/networks/" + networkname + "/mock/" + selectedSim).then(
     function(d) {
       startTimer();
-      setTimeout(function(){
-        initializeVisualisationWithClass(networkname),1000
-      });
       $(".display .label").text("Simulation running");
       //console.log(new Date());
       $("#rec_messages").attr("disabled",true);
@@ -274,12 +277,13 @@ function startViz(){
 }
 
 function initializeServer(){
+  initializeVisualisationWithClass(networkname);
   $("#error-messages").hide();
   $(".display").css({"opacity": "1"});
   $(".display .label").text("Connecting with backend...");
   $.post(BACKEND_URL + "/networks", JSON.stringify({Id: networkname})).then(
     function(d){
-      console.log("Backend POST init ok");
+      //console.log("Backend POST init ok");
       //initializeMocker(networkname_);
       $(".elapsed").show();
       setupEventStream();
@@ -321,6 +325,7 @@ function restartNetwork() {
   $("#stop").removeClass("fa-play-circle");
   d3.select("#network-visualisation").selectAll("*").remove();
   initializeServer();
+  visualisation.sidebar.resetCounters();
 };
 
 function stopNetwork() {
@@ -399,8 +404,8 @@ function showConnectionGraph() {
           'visibility': "visible"
   });
   $('#close').css({
-          'left': dialog.position().left + dialog.outerWidth()/2 - 20 + 'px',
-          'top':  dialog.position().top  - dialog.outerHeight()/2 -20 + 'px'
+          'left': dialog.position().left + dialog.outerWidth()/2 - 5 + 'px',
+          'top':  dialog.position().top  - dialog.outerHeight()/2 -25 + 'px'
   });
 
 } 
@@ -449,8 +454,8 @@ function showSelectDialog() {
           'visibility': "visible"
     });
     $('#close').css({
-          'left': dialog.position().left + dialog.outerWidth()/2 - 20 + 'px',
-          'top':  dialog.position().top  - dialog.outerHeight()/2 -20 + 'px'
+          'left': dialog.position().left + dialog.outerWidth()/2 - 5 + 'px',
+          'top':  dialog.position().top  - dialog.outerHeight()/2 -25 + 'px'
     });
     dialog.show();
     mockerlist_generated = true;
@@ -516,7 +521,7 @@ function initializeVisualisationWithClass(networkname_){
 function updateVisualisationWithClass(graph) {
   var self = this;
 
-  console.log("Updating visualization with new graph");
+  //console.log("Updating visualization with new graph");
   eventHistory.push({timestamp:$("#time-elapsed").text(), content: graph});
   
   var objs = [graph.add, graph.remove, graph.message];

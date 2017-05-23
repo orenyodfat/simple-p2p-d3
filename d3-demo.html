@@ -71,40 +71,38 @@
           <button id="show-conn-graph" onclick="showConnectionGraph()" class="invisible link-action">Show connection graph </button>
           <i id="info-message-events" class="fa info-circle" aria-hidden="true"></i>
         </div>
-        <div class="two-counts counts">
+
+        <div class="counts">
           <table>
             <thead>
-              <td width="20%" class="node-counts"></td>
-              <td width="40%" class="count-type node-counts">Nodes</td>
-              <td width="40%" class="count-type conn-counts">Connections</td>
+              <td class="count-type node-counts">Nodes</td>
+              <td></td>
+              <td class="count-type conn-counts">Connections</td>
+              <td></td>
+              <td class="count-type msg-counts">Messages</td>
             </thead>
             <tbody>
               <tr>
-                <td class="count-labels">Up</td>
-                <td id="nodes-up-count"    class="node-counts">0</td>
-                <td id="edges-up-count"    class="conn-counts">0</td>
-              </tr>
-              <tr>
-                <td class="count-labels">Added</td>
-                <td id="nodes-add-count"    class="node-counts">0</td>
-                <td id="edges-add-count"    class="conn-counts">0</td>
-              </tr>
-              <tr>
-                <td class="count-labels">Removed</td>
-                <td id="nodes-remove-count"    class="node-counts">0</td>
-                <td id="edges-remove-count"    class="conn-counts">0</td>
+                <td width="20%"id="nodes-up-count" class="up-count node-counts">0</td>
+                <td width="20%">
+                  <div class="subcount node-counts">
+                    <p class="count-label">Added</p><div id="nodes-add-count" class="count-value">0</div>
+                    <p class="count-label">Removed</p><div id="nodes-remove-count" class="count-value">0</div>
+                  </div>
+                </td>
+                <td width="20%" id="edges-up-count" class="up-count conn-counts">0</td>
+                <td width="20%">
+                  <div class="subcount conn-counts">
+                   <p class="count-label">Added</p><div id="edges-add-count" class="count-value">0</div>
+                   <p class="count-label">Removed</p><div id="edges-remove-count" class="count-value">0</div>
+                  </div>
+                </td>
+                <td width="20%" id="msg-count" class="up-count msg-counts">0</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="one-count counts msg-counts">
-          <div class="count-type">
-              Messages
-          </div>
-          <div id="msg-count">0
-          </div>
-        </div>
-
+        
         <div id="selected-node">
           <div class="node-bar">
             <h3>Node Information</h1>
@@ -118,6 +116,7 @@
               <button type="button" class="nodeactions" onclick="killNode()">Stop this node</button>
               <button type="button" class="nodeactions" onclick="connectTo()">Connect this node to peer</button>
               <button type="button" class="nodeactions" onclick="killLink()">Disconnect a link</button>
+              <button type="button" class="nodeactions" onclick="clearSelection()">Clear Selection</button>
             </div>
             <pre id="node-kademlia-table" class="kademlia-info"></pre>              
           </div>
