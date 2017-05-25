@@ -67,7 +67,7 @@
           <input id="timemachine" style="display:none" type="range">
         </div>
         <div class="control-options">
-          <input id="rec-messages" type="checkbox" class="link-action"/>Record message events
+          <input id="rec-messages" type="checkbox" class="check-options link-action"/>Record message events
           <button id="show-conn-graph" onclick="showConnectionGraph()" class="invisible link-action">Show connection graph </button>
           <i id="info-message-events" class="fa info-circle" aria-hidden="true"></i>
         </div>
@@ -119,6 +119,9 @@
               <button type="button" class="nodeactions" onclick="clearSelection()">Clear Selection</button>
             </div>
             <pre id="node-kademlia-table" class="kademlia-info"></pre>              
+            <div id="kad-hint" class="invisible hint">The network updated. The above routing table may be out-of-date.
+              <button class="small-link-action" onclick='refreshKadTable()'>Refresh</button>
+            </div> 
           </div>
         </div>
       </div>

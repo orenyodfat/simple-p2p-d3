@@ -194,7 +194,8 @@ function setupEventStream() {
             id:     event.conn.one + "-" + event.conn.other,
             source: event.conn.one,
             target: event.conn.other,
-            up:     event.conn.up
+            up:     event.conn.up,
+            distance: event.conn.distance
           },
           control: event.control
         };
@@ -301,28 +302,10 @@ function initializeServer(){
 };
 
 function restartNetwork() {
-  /*
-  $.post(BACKEND_URL + "/networks/").then(
-    function(d){
-      startTimer();
-      $(".display .label").text("Simulation running");
-      $("#stop").removeClass("fa-play-circle");
-      $("#stop").addClass("fa-stop");
-      $("#show-conn-graph").hide();
-      $("#rec_messages").attr("disabled",true);
-    },
-    function(e,s,err) {
-      $("#error-messages").show();
-      $("#error-reason").text("Is the backend running?");
-      $('#power').prop("disabled",false);
-      $('#play').prop("disabled",true);
-      $('#pause').prop("disabled",true);
-      console.log("Error sending POST to " + BACKEND_URL + "/networks");
-      console.log(e);
-    });
-  */
   $("#stop").addClass("fa-stop");
   $("#stop").removeClass("fa-play-circle");
+  $("#show-conn-graph").addClass("invisible");
+  $('#selected-node').hide();
   d3.select("#network-visualisation").selectAll("*").remove();
   initializeServer();
   visualisation.sidebar.resetCounters();
@@ -502,6 +485,7 @@ function getGraphLinks(arr) {
       .map(function(i,e){
         return {
           id: e.data.id,
+          distance: e.data.distance,
           label: nodeShortLabel(e.data.id),
           control: e.control,
           source: e.data.source,
@@ -538,6 +522,9 @@ function updateVisualisationWithClass(graph) {
   elem.scrollTop = elem.scrollHeight;
 
   $('#node-kademlia-table').addClass("stale");
+  if (selectionActive) {
+    $('#kad-hint').removeClass("invisible");
+  }
   //new nodes
   var newNodes = getGraphNodes($(graph.add));
   //new connections 
