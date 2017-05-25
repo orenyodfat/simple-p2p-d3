@@ -1,5 +1,7 @@
 $(document).ready(function() {
   timemachine = $("#timemachine").get(0);
+  /*
+  DISABLE MANUALLY MOVING THE SLIDER FOR NOW
   ["input", "change"].forEach(function(evtType) {
     timemachine.addEventListener(evtType,  function() {
       eventLog[evtType] += 1;
@@ -8,10 +10,15 @@ $(document).ready(function() {
   });
 
   onRangeChange(timemachine, rangeListener);
+  */
 });
 
-function onRangeChange(ranger, listener) {
+var TimemachineIndex  = 0;
+var replayInterval    = false;
+var replaySpeed       = 200;
 
+function onRangeChange(ranger, listener) {
+/* DISABLE FOR NOW
   var inputEvtHasNeverFired = true;
   var rangeValue = {current: undefined, mostRecent: undefined};
   
@@ -33,6 +40,7 @@ function onRangeChange(ranger, listener) {
       listener(evt);
     }
   }); 
+*/
 };
 
 var eventLog = {input: 0, change: 0, custom: 0};
@@ -68,11 +76,12 @@ function setupTimemachine() {
   Timemachine.skipCollectionSetup = true; 
   Timemachine.sidebar = visualisation.sidebar; 
   Timemachine.sidebar.visualisation = self; 
+  /*
   Timemachine.graphNodes = $.extend(true, [], visualisation.graphNodes);
   Timemachine.graphLinks = $.extend(true, [], visualisation.graphLinks);
   Timemachine.nodesById  = $.extend(true, {}, visualisation.nodesById);
   Timemachine.connsById  = $.extend(true, {}, visualisation.connsById);
-
+  */
   Timemachine.nodeCollection = Timemachine.svg.selectAll("circle").data(self.graphNodes);
   Timemachine.nodeCollection
     .on("click", function(d) {
@@ -93,10 +102,46 @@ function setupTimemachine() {
   Timemachine.linkCollection = Timemachine.svg.selectAll("line").data(self.graphLinks);
 
   currHistoryIndex = eventHistory.length -1;
-  $("#timemachine").val(100);
+  //$("#timemachine").val(100);
+  $("#timemachine").val(0);
 
   $("#timemachine-visualisation").show();
   $("#network-visualisation").hide();
+}
+
+function continueReplay () {
+  TimemachineReplay();
+}
+
+function pauseReplay() {
+  clearInterval(replayInterval);
+}
+
+TimemachineReplay = function() {
+  if (!TimemachineIndex) {
+    d3.select("#timemachine-visualisation").selectAll("*").remove();
+    Timemachine.sidebar.resetCounters();
+    Timemachine.graphNodes = [];
+    Timemachine.graphLinks = [];
+    Timemachine.nodesById  = {};
+    Timemachine.connsById  = {};
+  }
+  replayInterval = setInterval(function() {TimemachineStep(TimemachineIndex)}, replaySpeed);
+}
+
+TimemachineStep = function(idx) {
+  TimemachineForward(idx);
+  if (idx == eventHistory.length - 1) {
+    Timemachine.simulation.stop();
+    clearInterval(replayInterval);
+    $("#power").removeClass("stale");
+    $("#play").addClass("fa-play-circle");
+    $("#play").removeClass("fa-pause");
+    TimemachineIndex = 0;
+    return;
+  }
+  TimemachineIndex++;
+  $("#timemachine").val(100*TimemachineIndex / eventHistory.length);
 }
 
 TimemachineForward = function(idx) {
@@ -116,7 +161,7 @@ TimemachineForward = function(idx) {
   newLinks = getGraphLinks($(content.add));
 
   Timemachine.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs); 
-  Timemachine.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks);
+  //Timemachine.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks);
 }
 
 

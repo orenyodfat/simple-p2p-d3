@@ -14,12 +14,15 @@ class P2Pd3Sidebar {
       .classed("stale",false);
 
     var selectedNode = $(this.sidebar).find('#selected-node');
-    $(".node-bar").css({"visibility":"visible"});
     selectedNode.addClass('node-selected');
     selectedNode.find('#full-node-id').val(data.id);
     selectedNode.find('#node-id').html(nodeShortLabel(data.id));
     selectedNode.find('#node-index').html(data.index);
     this.selectConnections(data.id);
+    if (this.visualisation == Timemachine) {
+      return;
+    }
+    $(".node-bar").css({"visibility":"visible"});
     //selectedNode.find('.node-balance').html(data.balance);
 
     var classThis = this;
@@ -41,11 +44,27 @@ class P2Pd3Sidebar {
           console.log(e);
         }
     );
+    var ws = new WebSocket("ws://localhost:8888/networks/0/nodes/" + data.id + "/rpc");
+    ws.onopen = function(evt) {
+      ws.send({"jsonrpc":"2.0","id":1,"method":"hive_healthy", "params": [null]});
+    }
+    
+    ws.onmessage = function(msg) {
+        console.log(msg);
+    }
+    ws.onerror= function(msg) {
+        console.log(msg);
+    }
   }
 
   updateSidebarCounts() {
-    $("#nodes-up-count").text(visualisation.graphNodes?visualisation.graphNodes.length:"0");
-    $("#edges-up-count").text(visualisation.graphLinks?visualisation.graphLinks.length:"0");
+    $("#nodes-up-count").text(this.visualisation.graphNodes?this.visualisation.graphNodes.length:"0");
+    $("#edges-up-count").text(this.visualisation.graphLinks?this.visualisation.graphLinks.length:"0");
+          $("#edges-remove-count").text(connRemoveCounter);
+          $("#edges-add-count").text(connAddCounter);
+          $("#nodes-remove-count").text(nodeRemoveCounter);
+          $("#nodes-add-count").text(nodeAddCounter);
+        $("#msg-count").text(msgCounter);
   }
 
   resetCounters() {
@@ -101,11 +120,11 @@ class P2Pd3Sidebar {
   }
 
   clearSelection(fromButton) {
-    visualisation.linkCollection
+    this.visualisation.linkCollection
       .attr("stroke", "#808080")
       .attr("stroke-width", 1.5)
       .classed("stale", false);
-    visualisation.nodeCollection.classed("stale", false);
+    this.visualisation.nodeCollection.classed("stale", false);
     if (fromButton) {
       $("circle").removeClass("selected");
     }
@@ -390,6 +409,7 @@ class P2Pd3 {
       //console.log("NEW node: " + nodes[i].id);
         this.nodesById[nodeShortLabel(nodes[i].id)] = [];
         this.graphNodes.push(nodes[i]);
+        nodeAddCounter += 1;
     }
     this.nodesChanged = true;
   }
@@ -408,6 +428,7 @@ class P2Pd3 {
             //n.visible = false;
             break;
           } 
+          nodeRemoveCounter += 1;
         }
         return contained == false; 
     });
@@ -458,6 +479,7 @@ class P2Pd3 {
       if (this.sources.indexOf(links[i].source) == -1) {
         this.sources.push(links[i].source);
       }
+      connAddCounter += 1;
     }
     this.graphLinks = this.graphLinks.concat(links);
     //console.log("ADD connection, source: " + source+ " - target: " + target );
@@ -502,6 +524,7 @@ class P2Pd3 {
             if (j>-1) {
               self.nodesById[t].splice(j, 1);
             }
+            connRemoveCounter += 1;
             break;
           } 
         }
@@ -521,6 +544,7 @@ class P2Pd3 {
       } else {
         console.log("WARN: got message for connection which does not exist in simulation!");
       }
+      msgCounter += 1;
     }
     return msgs;
 	}
