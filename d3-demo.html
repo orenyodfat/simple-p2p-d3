@@ -52,9 +52,9 @@
           <i id="play" class="invisible fa fa-play-circle" aria-hidden="true"></i>
           <!--
           <i id="pause" class="invisible fa fa-pause" aria-hidden="true"></i>
-          <i id="stop" class="invisible fa fa-stop" aria-hidden="true"></i>
           -->
-          <i id="freeze" class="invisible fa fa-snowflake-o" aria-hidden="true"></i>
+          <i id="stop" class="invisible fa fa-stop" aria-hidden="true"></i>
+          <i id="refresh" class="invisible fa fa-fast-backward" aria-hidden="true"></i>
           <div class="display">
             <div class="elapsed">Time elapsed: <span id="time-elapsed">00:00:00</span></div>
             <div class="label">
@@ -64,11 +64,28 @@
             </div>
           </div>
         </div>
-        <div class="actions">
+
+        <div class="timemachine-section">
           <input id="timemachine" style="display:none" type="range">
+          <div>
+            <label for="replaySpeed">Replay Speed (ms)</label>
+            <input type="text" name="replaySpeed" id="replaySpeed" value="200">
+            <button type="button" class="speedDial" id="incSpeed" name="incSpeed">+</button>
+            <button type="button" class="speedDial" id="decSpeed" name="decSpeed">-</button>
+          </div>
         </div>
+
         <div class="control-options">
-          <input id="rec-messages" type="checkbox" class="link-action"/>Record message events
+          <label for="showlog">Enable log console</label>
+          <label>
+                <input type="checkbox" checked="checked" id="showlogs" name="showlogs" value="true">
+                <span></span>
+          </label>
+          <label for="replaySpeed">Record message events</label>
+          <label>
+            <input id="rec-messages" type="checkbox" class="checkbox"/>
+            <span></span>
+          </label>
           <button id="show-conn-graph" onclick="showConnectionGraph()" class="invisible link-action">Show connection graph </button>
           <i id="info-message-events" class="fa info-circle" aria-hidden="true"></i>
         </div>
@@ -136,7 +153,6 @@
       </div>
     </div>
     <div id="Overlay" name="Overlay" class="overlay">
-      <div id="close" class="close" onclick="funcClose(this);">X</div>
     </div>
     <div id="select-mocker" name="select-mocker" class="ui-dialog">
     </div>
@@ -145,7 +161,6 @@
        <div class="invisible action-div" onclick="toggleChord()" id="toggle-chord">Show message graph</div>
     </div>
     <div id="output-window">
-      <label><input type="checkbox" checked="checked" id="showlogs" name="showlogs" value="true">Enable log console</label>
       <div id="log-console"> </div>
     </div>
   </body>

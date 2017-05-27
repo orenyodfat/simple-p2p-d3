@@ -60,11 +60,11 @@ class P2Pd3Sidebar {
   updateSidebarCounts() {
     $("#nodes-up-count").text(this.visualisation.graphNodes?this.visualisation.graphNodes.length:"0");
     $("#edges-up-count").text(this.visualisation.graphLinks?this.visualisation.graphLinks.length:"0");
-          $("#edges-remove-count").text(connRemoveCounter);
-          $("#edges-add-count").text(connAddCounter);
-          $("#nodes-remove-count").text(nodeRemoveCounter);
-          $("#nodes-add-count").text(nodeAddCounter);
-        $("#msg-count").text(msgCounter);
+    $("#edges-remove-count").text(connRemoveCounter);
+    $("#edges-add-count").text(connAddCounter);
+    $("#nodes-remove-count").text(nodeRemoveCounter);
+    $("#nodes-add-count").text(nodeAddCounter);
+    $("#msg-count").text(msgCounter);
   }
 
   resetCounters() {
@@ -81,6 +81,9 @@ class P2Pd3Sidebar {
     $("#nodes-remove-count").text("0");
     $("#edges-remove-count").text("0");
     $("#msg-count").text("0");
+
+
+    this.visualisation.nodesById
   }
 
   formatNodeHTML(str) {
@@ -198,6 +201,16 @@ class P2Pd3 {
     this.height = svg.attr("height");
     this.svg = svg;
 
+    this.resetObjects();
+
+    this.skipCollectionSetup = false;
+
+    this.nodeRadius = 16;
+    this.color = d3.scaleOrdinal(d3.schemeCategory20);
+    this.sidebar = new P2Pd3Sidebar('#sidebar', this);
+  }
+
+  resetObjects() {
     this.graphNodes = [];
     this.graphLinks = [];
     this.graphMsgs = [];
@@ -206,12 +219,6 @@ class P2Pd3 {
     this.connsById = {};
     this.connCounter = {};
     this.sources = [];
-
-    this.skipCollectionSetup = false;
-
-    this.nodeRadius = 16;
-    this.color = d3.scaleOrdinal(d3.schemeCategory20);
-    this.sidebar = new P2Pd3Sidebar('#sidebar', this);
   }
 
   linkDistance(d) {

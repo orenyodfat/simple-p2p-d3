@@ -1,6 +1,6 @@
 $(document).ready(function() {
-  timemachine = $("#timemachine").get(0);
   /*
+  timemachine = $("#timemachine").get(0);
   DISABLE MANUALLY MOVING THE SLIDER FOR NOW
   ["input", "change"].forEach(function(evtType) {
     timemachine.addEventListener(evtType,  function() {
@@ -11,6 +11,35 @@ $(document).ready(function() {
 
   onRangeChange(timemachine, rangeListener);
   */
+  $(".speedDial").on("click", function() {
+    var $button = $(this);
+    var oldValue = $button.parent().find("input").val();
+    var newVal = 0;
+
+    if ($button.text() == "+") {
+      if (oldValue < 200) {
+        newVal = parseFloat(oldValue) + 20;
+      } else {
+        newVal = parseFloat(oldValue) + 200;
+      }
+    } else {
+     // Don't allow decrementing below 20
+      if (oldValue > 200) {
+        newVal = parseFloat(oldValue) - 200;
+      } else {
+        if (oldValue > 20) {
+          newVal = parseFloat(oldValue - 20);
+        } else {
+          newVal = 20;
+        }
+      }
+    }
+
+    $button.parent().find("input").val(newVal);
+    replaySpeed = newVal;
+    clearInterval(replayInterval);
+    replayInterval = setInterval(function() {TimemachineStep(TimemachineIndex)}, replaySpeed);
+  });
 });
 
 var TimemachineIndex  = 0;

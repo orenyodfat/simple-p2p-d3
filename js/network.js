@@ -59,7 +59,7 @@ $(document).ready(function() {
   //click handlers
   $('#power').on('click',function(){ 
     if ($(this).hasClass("power-off")) {
-      if (eventCounter == 0) {
+      if ($("#timemachine").is(":hidden")) {
         initializeServer(networkname); 
       } else {
         restartNetwork();
@@ -94,8 +94,8 @@ $(document).ready(function() {
       pauseNetwork();
   });
 
-  $("#freeze").click(function() {
-    freezeViz();
+  $("#refresh").click(function() {
+    replayViz();
   });
 
   $("#snapshot").click(function() {
@@ -122,11 +122,16 @@ $(document).ready(function() {
     }
   });
 
+  $("#showlogs").change(function() {
+    if ($('#showlogs').is(":checked") ) {
+      $('#output-window').show("slow"); 
+    } else {
+      $('#output-window').hide("slow"); 
+    }
+  });
 
   $('#output-window').on('click',function(){ 
-    if ($('#showlogs').is(":checked") ) {
-      $('#output-window').toggleClass("closepane"); 
-    }
+    $('#output-window').toggleClass("closepane"); 
   });
 
   $('#selected-simulation').text(selectedSim);
@@ -250,11 +255,10 @@ function setupEventStream() {
   };
 
   eventSource.onerror = function() {
+    $("#power").addClass("power-off");
+    $("#power").removeClass("power-on");
     $("#error-messages").show();
     $("#error-reason").text("Has the backend been shut down?");
-    $('#pause').prop("disabled",true);
-    $('#play').prop("disabled",true);
-    $('#power').prop("disabled",false);
     $("#backend-nok").show("slow");
     $("#backend-ok").hide("slow");
     $(".display .label").text("Disconnected");
@@ -279,10 +283,9 @@ function startViz(){
       $("#rec_messages").attr("disabled",true);
       $("#power").removeClass("power-off");
       $("#power").addClass("power-on");
-      //$("#stop").removeClass("invisible");
+      $("#stop").removeClass("invisible");
       //$("#pause").removeClass("invisible");
       //$("#snapshot").removeClass("invisible");
-      $("#freeze").removeClass("invisible");
   }, function(e) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
@@ -305,28 +308,29 @@ function initializeServer(){
     function(e,s,err) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
-      $('#power').prop("disabled",false);
-      $('#play').prop("disabled",true);
-      $('#pause').prop("disabled",true);
       console.log("Error sending POST to " + BACKEND_URL + "/networks");
       console.log(e);
     });
 };
 
 function restartNetwork() {
-  //$("#stop").addClass("fa-stop");
-  //$("#stop").removeClass("fa-play-circle");
   $("#power").removeClass("power-off");
   $("#power").addClass("power-on");
+  $("#stop").removeClass("fa-play");
+  $("#stop").addClass("fa-stop");
+  $("#play").addClass("invisible");
+  $("#refresh").addClass("invisible");
   d3.select("#network-visualisation").selectAll("*").remove();
   initializeServer();
   visualisation.sidebar.resetCounters();
+  $("#show-conn-graph").addClass("invisible");
+  $(".timemachine-section").hide("fast");
   $("#timemachine-visualisation").hide();
   $("#network-visualisation").show();
-  $("#play").removeClass("invisible");
 };
 
 function stopNetwork() {
+  visualisation.simulation.stop();
   $(".display .label").text("Stop network: waiting for backend...");
   $("#stop").addClass("stale");
   $("#power").addClass("stale");
@@ -337,18 +341,20 @@ function stopNetwork() {
     contentType:'application/json',
     dataType: 'text', 
     success: function(d) {
+      $("#stop").removeClass("invisible");
       eventSource.close();
       clearInterval(clockId);
       resetTimer();
       $("#stop").removeClass("fa-stop");
-      $("#stop").addClass("fa-play-circle");
+      $("#stop").addClass("fa-play");
+      $("#stop").removeClass("stale");
       $("#show-conn-graph").removeClass("invisible");
       $(".display .label").text("Simulation stopped. Network deleted.");
       $("#rec_messages").attr("disabled",false);
-      $("#stop").removeClass("stale");
       $("#power").removeClass("power-on");
       $("#power").addClass("power-off");
       $("#power").removeClass("stale");
+      $("#refresh").removeClass("invisible");
     },
     error: function(d) {
       $(".display .label").text("Failed to stop network!");
@@ -391,16 +397,13 @@ function pauseNetwork() {
   }
 }
 
-function freezeViz() {
-  clearInterval(clockId);
-  stopNetwork();
-  eventSource.close();
+function replayViz() {
   $("#timemachine").show();
-  visualisation.simulation.stop();
   setupTimemachine();
-  $("#freeze").hide("slow");
+  $("#stop").addClass("invisible");
+  $("#refresh").addClass("invisible");
   $("#play").removeClass("invisible");
-  $("#power").addClass("stale");
+  $(".timemachine-section").show("slow");
   //$('#pause').prop("disabled",true);
   //$('#play').prop("disabled",false);
 }
@@ -418,6 +421,7 @@ function takeSnapshot() {
 }
 
 function showConnectionGraph() {
+  d3.select("#chord-diagram").selectAll("*").remove();
   putOverlay();
   chord = new P2PConnectionsDiagram();  
   chord.setupDiagram(false);
@@ -428,15 +432,11 @@ function showConnectionGraph() {
   }
   dialog.show("slow");
   dialog.css({
-          'margin-left': -diagram.outerWidth() / 2 + 'px',
-          'margin-top':  -diagram.outerHeight() / 2 + 'px',
+          'margin-left': 0-dialog.outerWidth() / 2 + 'px',
+          'margin-top':  0-dialog.outerHeight() / 2 + 'px',
           'visibility': "visible"
   });
-  $('#close').css({
-          'left': dialog.position().left + dialog.outerWidth()/2 - 5 + 'px',
-          'top':  dialog.position().top  - dialog.outerHeight()/2 -25 + 'px'
-  });
-
+  dialog.append('<div id="close" class="close" onclick="funcClose(this);">X</div>');
 } 
 
 
@@ -477,14 +477,11 @@ function showSelectDialog() {
     dframe.append(table);
     var dialog = $("#select-mocker");
     dialog.append(dframe);
+    dialog.append('<div id="close" class="close" onclick="funcClose(this);">X</div>');
     dialog.css({
           'margin-left': -dialog.outerWidth() / 2 + 'px',
           'margin-top':  -dialog.outerHeight() / 2 + 'px',
           'visibility': "visible"
-    });
-    $('#close').css({
-          'left': dialog.position().left + dialog.outerWidth()/2 - 5 + 'px',
-          'top':  dialog.position().top  - dialog.outerHeight()/2 -25 + 'px'
     });
     dialog.show();
     mockerlist_generated = true;
@@ -498,6 +495,7 @@ function putOverlay() {
 function funcClose() {
   $("#Overlay").hide("slow");
   $(".ui-dialog").hide("slow");
+  $("#close").remove();
 }
 
 
