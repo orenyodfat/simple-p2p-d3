@@ -194,6 +194,7 @@ function setupEventStream() {
           group: "nodes",
           data: {
             id: event.node.config.id,
+            name: event.node.config.name,
             up: event.node.up
           },
           control: event.control
@@ -517,6 +518,7 @@ function getGraphNodes(arr) {
         return {
           id: e.data.id,
           label: nodeShortLabel(e.data.id),
+          name: e.data.name,
           control: e.control,
           visible: true,
           group: 1

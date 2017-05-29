@@ -1,9 +1,9 @@
 class P2Pd3Sidebar {
 
   constructor(selector, viz) {
-    var self = this;
     this.sidebar = $(selector)
     this.visualisation = viz;
+    this.ws = false;
   }
 
   updateSidebarSelectedNode(data) {
@@ -44,17 +44,41 @@ class P2Pd3Sidebar {
           console.log(e);
         }
     );
-    var ws = new WebSocket("ws://localhost:8888/networks/0/nodes/" + data.id + "/rpc");
-    ws.onopen = function(evt) {
-      ws.send({"jsonrpc":"2.0","id":1,"method":"hive_healthy", "params": [null]});
+    if (this.ws) {
+      this.ws.close();
     }
-    
-    ws.onmessage = function(msg) {
-        console.log(msg);
-    }
-    ws.onerror= function(msg) {
-        console.log(msg);
-    }
+    this.ws = new WebSocket("ws://localhost:8888/networks/0/nodes/" + data.name + "/rpc");
+    // Connection opened
+    this.ws.addEventListener('open', function (event) {
+      classThis.ws.send('{"jsonrpc":"2.0","id":1,"method":"hive_healthy","params": [null]}');
+    });
+
+    // Listen for messages
+    this.ws.addEventListener('message', function (event) {
+      //console.log('Message from server', event.data);
+      if (event.data) {
+        var data = JSON.parse(event.data);
+        if (data && data.result !== undefined) {
+          var healthy = JSON.parse(event.data).result;
+          console.log(healthy);
+          if (healthy) {
+            $("#healthy").addClass("power-on");
+            $("#healthy").removeClass("power-off");
+          } else {
+            $("#healthy").addClass("power-off");
+            $("#healthy").removeClass("power-on");
+          } 
+          $("#healthy").removeClass("invisible");
+        } else {
+          console.log("Unexpected error from WS response!");
+        }
+      }
+    });
+
+    // Listen for messages
+    this.ws.addEventListener('error', function (event) {
+      console.log('Error from server', event.data);
+    });
   }
 
   updateSidebarCounts() {
