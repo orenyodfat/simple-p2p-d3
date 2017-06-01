@@ -25,22 +25,26 @@ class P2Pd3Sidebar {
     $(".node-bar").css({"visibility":"visible"});
     //selectedNode.find('.node-balance').html(data.balance);
 
+    this.getNodeInfo(data.id);
+  }
+
+  getNodeInfo(nodeId) {
     var classThis = this;
   
     $.ajax({
-      url: BACKEND_URL + "/networks/"  + networkname + "/nodes/" + data.id,
+      url: BACKEND_URL + "/networks/"  + networkname + "/nodes/" + nodeId,
       type: "GET",
       dataType: "json"
       }).then(
         function(d){
-          //console.log("Successfully retrieved node info for id: " + data.id);
-          var nodeDom = selectedNode.find('#node-kademlia-table');
+          //console.log("Successfully retrieved node info for id: " + nodeId);
           //console.log(d);
-          nodeDom.html(classThis.formatNodeHTML(d.protocols.hive));
-          nodeDom.removeClass("stale");
+          $('#kad-hint').addClass("invisible");
+          $('#node-kademlia-table').text(d.protocols.hive);
+          $('#node-kademlia-table').removeClass("stale");
         },
         function(e){
-          console.log("Error retrieving node info for id: " + data.id);
+          console.log("Error retrieving node info for id: " + nodeId);
           console.log(e);
         }
     );
@@ -154,6 +158,8 @@ class P2Pd3Sidebar {
     this.visualisation.nodeCollection.classed("stale", false);
     if (fromButton) {
       $("circle").removeClass("selected");
+      $("#node-kademlia-table").text("");
+      $('#kad-hint').addClass("invisible");
     }
     selectionActive = false;
   }
@@ -169,6 +175,7 @@ function killNode() {
   $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + node + "/stop").then(
     function(d) {
       console.log("Node successfully stopped");
+      $('#kad-hint').addClass("invisible");
     },
     function(e) {
       console.log("Error stopping node");
@@ -246,7 +253,8 @@ class P2Pd3 {
   }
 
   linkDistance(d) {
-    return Math.floor(Math.random() * 11) + 400;
+    //return Math.floor(Math.random() * 11) + 400;
+    return (d.distance / 20) * 100;
   }
 
   // increment callback function during simulation
@@ -607,4 +615,8 @@ function  nodeShortLabel(id) {
 
 function clearSelection() {
   visualisation.sidebar.clearSelection(true);
+}
+
+function refreshKadTable() {
+  visualisation.sidebar.getNodeInfo($("#full-node-id").val());
 }

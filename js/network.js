@@ -215,7 +215,8 @@ function setupEventStream() {
             id:     event.conn.one + "-" + event.conn.other,
             source: event.conn.one,
             target: event.conn.other,
-            up:     event.conn.up
+            up:     event.conn.up,
+            distance: event.conn.distance
           },
           control: event.control
         };
@@ -531,6 +532,7 @@ function getGraphLinks(arr) {
       .map(function(i,e){
         return {
           id: e.data.id,
+          distance: e.data.distance,
           label: nodeShortLabel(e.data.id),
           control: e.control,
           source: e.data.source,
@@ -569,6 +571,9 @@ function updateVisualisationWithClass(graph) {
   elem.scrollTop = elem.scrollHeight;
 
   $('#node-kademlia-table').addClass("stale");
+  if (selectionActive) {
+    $('#kad-hint').removeClass("invisible");
+  }
   //new nodes
   var newNodes = getGraphNodes($(graph.add));
   //new connections 

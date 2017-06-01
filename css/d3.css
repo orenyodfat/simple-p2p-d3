@@ -427,7 +427,7 @@ input[type=range]:focus::-ms-fill-upper {
 
 #output-window {
   width: 100%;
-  top: 95vh; 
+  top: 96vh; 
   bottom: 0;
   overflow: auto;
   transition: all 1s;
@@ -608,6 +608,14 @@ tr.selectelement td {
   border: 1px solid #777;
   background-color: #303030;
   color: white;
+}
+
+.small-link-action {
+  cursor: pointer;
+  border: 1px solid #777;
+  background-color: #303030;
+  color: white;
+  padding: 2px;
 }
 
 .link-action {
