@@ -570,10 +570,6 @@ function updateVisualisationWithClass(graph) {
   var elem = document.getElementById('output-window');
   elem.scrollTop = elem.scrollHeight;
 
-  $('#node-kademlia-table').addClass("stale");
-  if (selectionActive) {
-    $('#kad-hint').removeClass("invisible");
-  }
   //new nodes
   var newNodes = getGraphNodes($(graph.add));
   //new connections 

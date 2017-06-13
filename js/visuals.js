@@ -39,9 +39,7 @@ class P2Pd3Sidebar {
         function(d){
           //console.log("Successfully retrieved node info for id: " + nodeId);
           //console.log(d);
-          $('#kad-hint').addClass("invisible");
           $('#node-kademlia-table').text(d.protocols.hive);
-          $('#node-kademlia-table').removeClass("stale");
         },
         function(e){
           console.log("Error retrieving node info for id: " + nodeId);
@@ -51,7 +49,7 @@ class P2Pd3Sidebar {
     if (this.ws) {
       this.ws.close();
     }
-    this.ws = new WebSocket("ws://localhost:8888/networks/0/nodes/" + data.name + "/rpc");
+    this.ws = new WebSocket("ws://localhost:8888/networks/0/nodes/" + nodeId + "/rpc");
     // Connection opened
     this.ws.addEventListener('open', function (event) {
       classThis.ws.send('{"jsonrpc":"2.0","id":1,"method":"hive_healthy","params": [null]}');
@@ -477,10 +475,15 @@ class P2Pd3 {
   appendLinks(links){
     if (!links.length) { return }
 
+    var self = this;
     for (var i=0;i<links.length;i++) {
       var id     = links[i].id;
       var source = nodeShortLabel(links[i].source);
       var target = nodeShortLabel(links[i].target);
+      var selectedNode = $("#full-node-id").val();
+      if (selectedNode == links[i].source || selectedNode == links[i].target) {
+        self.updateKadTable(selectedNode);
+      }
       //this should not happen, but it does...
       //indicates connections arrive before node events
       //so this is a bit of a hack...TODO on backend
@@ -543,6 +546,15 @@ class P2Pd3 {
     //delete this.nodesById[id];
   } 
 
+  updateKadTable(nodeId) {
+  //$('#node-kademlia-table').addClass("stale");
+  //if (selectionActive) {
+  //  $('#kad-hint').removeClass("invisible");
+  //}
+    this.sidebar.getNodeInfo(nodeId);
+    console.log("Kad table of selected Node updated");
+  }
+
   removeLinks(links){
     if (!links.length) { return }
 
@@ -553,6 +565,10 @@ class P2Pd3 {
           if (n.id == links[k].id) {
             contained = true;
             //n.visible = false;
+            var selectedNode = $("#full-node-id").val();
+            if (selectedNode == links[k].source || selectedNode == links[k].target) {
+              self.updateKadTable(selectedNode);
+            }
             var s = nodeShortLabel(links[k].source);            
             var t = nodeShortLabel(links[k].target);            
             var j = self.nodesById[s].indexOf(n.id);
