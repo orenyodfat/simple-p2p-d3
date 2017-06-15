@@ -252,7 +252,8 @@ class P2Pd3 {
 
   linkDistance(d) {
     //return Math.floor(Math.random() * 11) + 400;
-    return (d.distance / 20) * 100;
+    //return (d.distance / 20) * 100;
+    return d.distance * 100;
   }
 
   // increment callback function during simulation

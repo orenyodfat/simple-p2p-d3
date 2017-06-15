@@ -532,7 +532,7 @@ function getGraphLinks(arr) {
       .map(function(i,e){
         return {
           id: e.data.id,
-          distance: e.data.distance,
+          distance: 9 - (e.data.distance / 10),
           label: nodeShortLabel(e.data.id),
           control: e.control,
           source: e.data.source,
