@@ -532,7 +532,7 @@ function getGraphLinks(arr) {
       .map(function(i,e){
         return {
           id: e.data.id,
-          distance: e.data.distance,
+          distance: 9 - (e.data.distance / 10),
           label: nodeShortLabel(e.data.id),
           control: e.control,
           source: e.data.source,
@@ -570,10 +570,6 @@ function updateVisualisationWithClass(graph) {
   var elem = document.getElementById('output-window');
   elem.scrollTop = elem.scrollHeight;
 
-  $('#node-kademlia-table').addClass("stale");
-  if (selectionActive) {
-    $('#kad-hint').removeClass("invisible");
-  }
   //new nodes
   var newNodes = getGraphNodes($(graph.add));
   //new connections 

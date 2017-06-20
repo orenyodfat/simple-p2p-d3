@@ -405,7 +405,16 @@ input[type=range]:focus::-ms-fill-upper {
 .kademlia-info {
   font-size: 0.8em;
   font-family: "monospace";
+  float: left;
+  font-family: monospace;
 }
+
+.kademlia-info:hover  {
+  z-index: 10;
+  font-size: 2em;
+  width: 500px;
+}
+
 
 .stale {
   opacity: 0.4;
