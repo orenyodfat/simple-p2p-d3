@@ -337,6 +337,7 @@ function stopNetwork() {
   $(".display .label").text("Stop network: waiting for backend...");
   $("#stop").addClass("stale");
   $("#power").addClass("stale");
+  
   $.ajax({
     url: BACKEND_URL + "/networks/" + networkname,
     type: "DELETE",
@@ -375,9 +376,21 @@ function loadExistingNodes() {
         remove:  [],
         message: []
       };
-      graph.add = d;
+      
+      for (var i=0; i<d.length; i++) {
+        var el = {
+          group: "nodes",
+          data: {
+            id: d[i].id,
+            name:d[i].name,
+            up: true 
+          },
+          control: false 
+        };
+        graph.add.push(el);
+      }
       console.log("Successfully loaded existing node list");
-      console.log(d);
+      //console.log(graph.add);
       updateVisualisationWithClass(graph);
     },
     function(d) {
@@ -612,7 +625,6 @@ function updateVisualisationWithClass(graph) {
         })
         .toArray();
   } 
-
   self.visualisation.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs);
 };
 
