@@ -99,7 +99,7 @@ $(document).ready(function() {
   });
 
   $("#snapshot").click(function() {
-    //takeSnapshot();
+    takeSnapshot();
   });
 
   $("#rec-messages").change(function() {
@@ -287,7 +287,7 @@ function startViz(){
       $("#power").addClass("power-on");
       $("#stop").removeClass("invisible");
       //$("#pause").removeClass("invisible");
-      //$("#snapshot").removeClass("invisible");
+      $("#snapshot").removeClass("invisible");
   }, function(e) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
@@ -304,6 +304,7 @@ function initializeServer(){
       //console.log("Backend POST init ok");
       //initializeMocker(networkname_);
       $(".elapsed").show();
+      loadExistingNodes();
       setupEventStream();
       clearInterval(pollInterval);
     },
@@ -364,6 +365,24 @@ function stopNetwork() {
       $("#power").removeClass("stale");
     }
   });
+}
+
+function loadExistingNodes() {
+  $.get(BACKEND_URL + "/networks/" + networkname + "/nodes").then(
+    function(d) {
+      var graph = {
+        add:     [],
+        remove:  [],
+        message: []
+      };
+      graph.add = d;
+      console.log("Successfully loaded existing node list");
+      console.log(d);
+      updateVisualisationWithClass(graph);
+    },
+    function(d) {
+      console.log("Error getting nodes list from backend");
+    });
 }
 
 function pauseNetwork() {
