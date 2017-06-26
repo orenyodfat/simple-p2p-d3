@@ -90,6 +90,10 @@ $(document).ready(function() {
     }
   });
 
+  $("#start").click(function() {
+      startSim();
+  });
+
   $("#pause").click(function() {
       pauseNetwork();
   });
@@ -100,6 +104,10 @@ $(document).ready(function() {
 
   $("#snapshot").click(function() {
     takeSnapshot();
+  });
+
+  $("#upload").click(function() {
+    uploadSnapshot();
   });
 
   $("#rec-messages").change(function() {
@@ -286,7 +294,8 @@ function startViz(){
       $("#power").removeClass("power-off");
       $("#power").addClass("power-on");
       $("#stop").removeClass("invisible");
-      //$("#pause").removeClass("invisible");
+      $("#start").addClass("invisible");
+      $("#upload").addClass("invisible");
       $("#snapshot").removeClass("invisible");
   }, function(e) {
       $("#error-messages").show();
@@ -298,15 +307,16 @@ function initializeServer(){
   initializeVisualisationWithClass(networkname);
   $("#error-messages").hide();
   $(".display").css({"opacity": "1"});
-  $(".display .label").text("Connecting with backend...");
   $.post(BACKEND_URL + "/networks", JSON.stringify({Id: networkname})).then(
     function(d){
       //console.log("Backend POST init ok");
       //initializeMocker(networkname_);
       $(".elapsed").show();
-      loadExistingNodes();
-      setupEventStream();
-      clearInterval(pollInterval);
+      $("#start").removeClass("invisible");
+      $("#upload").removeClass("invisible");
+      //loadExistingNodes();
+      //setupEventStream();
+      //clearInterval(pollInterval);
     },
     function(e,s,err) {
       $("#error-messages").show();
@@ -315,6 +325,12 @@ function initializeServer(){
       console.log(e);
     });
 };
+
+function startSim() {
+  $(".display .label").text("Connecting with backend...");
+  loadExistingNodes();
+  setupEventStream();
+}
 
 function restartNetwork() {
   $("#power").removeClass("power-off");
@@ -445,13 +461,56 @@ function replayViz() {
 function takeSnapshot() {
   $.get(BACKEND_URL + "/networks/" + networkname + "/snapshot").then(
     function(d) {
-      console.log("Snapshot successfully taken");
-      console.log(d);
+      //console.log("Snapshot successfully taken");
+      //console.log(d);
+      saveSnapshot(JSON.stringify(d));
     },
     function(d) {
       console.log("Snapshot failed.");
       console.log(d);
     });
+}
+
+function uploadSnapshot() {
+  var input = document.createElement("input");
+  input.type = "file";
+  input.addEventListener("change", doUploadSnapshot, false);
+  input.click();
+}
+
+function doUploadSnapshot() {
+  console.log(this.files);
+  var f = this.files[0];
+  //console.log(f);
+  //var snapshot = JSON.parse(new FileReader().readAsText(f));
+  var reader = new FileReader();
+  reader.readAsText(f);
+  reader.onload = function(e) {
+    var snapshot = reader.result;
+    $.post(BACKEND_URL + "/networks/" + networkname + "/snapshot", snapshot).then(
+      function(d){
+        console.log("snapshot uploaded");
+        loadExistingNodes();
+        setupEventStream();
+        $("#upload").addClass("invisible");
+        $("#start").addClass("invisible");
+        $("#stop").removeClass("invisible");
+      },
+      function(e){
+        console.log("Uploading snapshot failed");
+        console.log(e);
+      });
+  }
+  reader.onerror = function(e) {
+  }
+}
+
+function saveSnapshot(snapshot) {
+  var a = document.createElement("a");
+  var file = new Blob([snapshot], {type: "text/plain"});
+  a.href = URL.createObjectURL(file);
+  a.download = networkname + "_" + Date.now() + ".js";
+  a.click();  
 }
 
 function showConnectionGraph() {
@@ -531,19 +590,6 @@ function funcClose() {
   $(".ui-dialog").hide("slow");
   $("#close").remove();
 }
-
-
-//Mocker is currently not used for this visualization
-function initializeMocker(networkname_) {
-  $.post(BACKEND_URL + "/" + networkname_ + "/mockevents/").then(
-    function(d){
-      console.log("Backend initializeMocker OK");
-    },
-    function(e){
-      console.log("Error initializing mockevents at " + BACKEND_URL + '0/mockevents/');
-      console.log(e);
-    })
-};
 
 function getGraphNodes(arr) {
    return arr.filter(function(i,e){return e.group === 'nodes'})

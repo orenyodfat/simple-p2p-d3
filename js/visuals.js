@@ -534,29 +534,7 @@ class P2Pd3 {
     this.linksChanged = true;
   }
 
-  hideNodesLinks(id) {
-    var linksToHide = [];
-    var connList = this.connsById;
-    Object.keys(connList).forEach(function(key,index) {
-      if (nodeShortLabel(connList[key].source) == id ||
-          nodeShortLabel(connList[key].target) == id ) {
-        linksToHide.push({id: key});
-        eventHistory.push({timestamp:$("#time-elapsed").text(), content: {add:[], remove:[{id: key}]} });
-        //uplinks -= 1;
-        //console.log("REMOVE connection, id:" + key);
-        //delete connList[key];
-      }
-    });
-    //$("#edges-up-count").text(uplinks);
-    this.removeLinks(linksToHide);
-    //delete this.nodesById[id];
-  } 
-
   updateKadTable(nodeId) {
-  //$('#node-kademlia-table').addClass("stale");
-  //if (selectionActive) {
-  //  $('#kad-hint').removeClass("invisible");
-  //}
     this.sidebar.getNodeInfo(nodeId);
     console.log("Kad table of selected Node updated");
   }
