@@ -99,7 +99,7 @@ $(document).ready(function() {
   });
 
   $("#snapshot").click(function() {
-    //takeSnapshot();
+    takeSnapshot();
   });
 
   $("#rec-messages").change(function() {
@@ -287,7 +287,7 @@ function startViz(){
       $("#power").addClass("power-on");
       $("#stop").removeClass("invisible");
       //$("#pause").removeClass("invisible");
-      //$("#snapshot").removeClass("invisible");
+      $("#snapshot").removeClass("invisible");
   }, function(e) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
@@ -304,6 +304,7 @@ function initializeServer(){
       //console.log("Backend POST init ok");
       //initializeMocker(networkname_);
       $(".elapsed").show();
+      loadExistingNodes();
       setupEventStream();
       clearInterval(pollInterval);
     },
@@ -336,6 +337,7 @@ function stopNetwork() {
   $(".display .label").text("Stop network: waiting for backend...");
   $("#stop").addClass("stale");
   $("#power").addClass("stale");
+  
   $.ajax({
     url: BACKEND_URL + "/networks/" + networkname,
     type: "DELETE",
@@ -364,6 +366,36 @@ function stopNetwork() {
       $("#power").removeClass("stale");
     }
   });
+}
+
+function loadExistingNodes() {
+  $.get(BACKEND_URL + "/networks/" + networkname + "/nodes").then(
+    function(d) {
+      var graph = {
+        add:     [],
+        remove:  [],
+        message: []
+      };
+      
+      for (var i=0; i<d.length; i++) {
+        var el = {
+          group: "nodes",
+          data: {
+            id: d[i].id,
+            name:d[i].name,
+            up: true 
+          },
+          control: false 
+        };
+        graph.add.push(el);
+      }
+      console.log("Successfully loaded existing node list");
+      //console.log(graph.add);
+      updateVisualisationWithClass(graph);
+    },
+    function(d) {
+      console.log("Error getting nodes list from backend");
+    });
 }
 
 function pauseNetwork() {
@@ -593,7 +625,6 @@ function updateVisualisationWithClass(graph) {
         })
         .toArray();
   } 
-
   self.visualisation.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs);
 };
 
