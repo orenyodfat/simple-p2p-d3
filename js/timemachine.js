@@ -105,6 +105,7 @@ function setupTimemachine() {
   Timemachine.skipCollectionSetup = true; 
   Timemachine.sidebar = visualisation.sidebar; 
   Timemachine.sidebar.visualisation = self; 
+  TimemachineIndex = 0;
   /*
   Timemachine.graphNodes = $.extend(true, [], visualisation.graphNodes);
   Timemachine.graphLinks = $.extend(true, [], visualisation.graphLinks);
@@ -138,7 +139,7 @@ function setupTimemachine() {
   $("#network-visualisation").hide();
 }
 
-function continueReplay () {
+function continueReplay() {
   TimemachineReplay();
 }
 
@@ -154,6 +155,7 @@ TimemachineReplay = function() {
     Timemachine.graphLinks = [];
     Timemachine.nodesById  = {};
     Timemachine.connsById  = {};
+    $("#timemachine").val(0);
   }
   replayInterval = setInterval(function() {TimemachineStep(TimemachineIndex)}, replaySpeed);
 }
@@ -176,20 +178,10 @@ TimemachineStep = function(idx) {
 TimemachineForward = function(idx) {
   var evt         = eventHistory[idx];
   var time        = evt.timestamp;
-  var content     = evt.content;
+  var content     = $.extend(true, {}, evt.content);
   $("#time-elapsed").text(time);
-  var newNodes    = [];
-  var removeNodes = [];
-  var newLinks    = [];
-  var removeLinks = [];
-  var triggerMsgs = [];
 
-  removeNodes = getGraphNodes($(content.remove));
-  removeLinks = getGraphLinks($(content.remove));
-  newNodes = getGraphNodes($(content.add));
-  newLinks = getGraphLinks($(content.add));
-
-  Timemachine.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs); 
+  Timemachine.updateVisualisation(content); 
   //Timemachine.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks);
 }
 
@@ -199,17 +191,7 @@ TimemachineBackward = function(idx) {
   var time        = evt.timestamp;
   var content     = evt.content;
   $("#time-elapsed").text(time);
-  var newNodes    = [];
-  var removeNodes = [];
-  var newLinks    = [];
-  var removeLinks = [];
-  var triggerMsgs = [];
 
-  removeNodes = getGraphNodes($(content.add));
-  removeLinks = getGraphLinks($(content.add));
-  newNodes = getGraphNodes($(content.remove));
-  newLinks = getGraphLinks($(content.remove));
-
-  Timemachine.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs); 
-  Timemachine.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks);
+  Timemachine.updateVisualisation(content); 
+  //Timemachine.sidebar.updateSidebarCounts(newNodes, newLinks, removeNodes, removeLinks);
 }

@@ -12,7 +12,7 @@ var defaultSim            = "default";
 var selectedSim           = defaultSim;
 
 var eventSource           = null;
-var eventHistory          = [];
+var eventHistory          = null; 
 var currHistoryIndex      = 0;
 var time_elapsed          = new Date();
 var timemachine           = false;
@@ -53,101 +53,6 @@ var resetTimer = function() {
   s=0;
 }
 
-
-$(document).ready(function() {
-  
-  //click handlers
-  $('#power').on('click',function(){ 
-    if ($(this).hasClass("power-off")) {
-      if ($("#timemachine").is(":hidden")) {
-        initializeServer(networkname); 
-      } else {
-        restartNetwork();
-      }
-    } else {
-      stopNetwork(); 
-    }
-  });
-
-  $('#stop').on('click',function(){ 
-    if ($(this).hasClass("fa-stop")) {
-      stopNetwork(); 
-    } else {
-      restartNetwork(); 
-    }
-    $("#status-messages").hide();
-  });
-
-  $('#play').on('click',function(){ 
-    if ($(this).hasClass("fa-play-circle")) {
-      continueReplay(); 
-      $(this).removeClass("fa-play-circle");
-      $(this).addClass("fa-pause");
-    } else {
-      $(this).addClass("fa-play-circle");
-      $(this).removeClass("fa-pause");
-      pauseReplay(); 
-    }
-  });
-
-  $("#start").click(function() {
-      startSim();
-  });
-
-  $("#pause").click(function() {
-      pauseNetwork();
-  });
-
-  $("#refresh").click(function() {
-    replayViz();
-  });
-
-  $("#snapshot").click(function() {
-    takeSnapshot();
-  });
-
-  $("#upload").click(function() {
-    uploadSnapshot();
-  });
-
-  $("#rec-messages").change(function() {
-    if(this.checked) {
-      rec_messages = true;
-    } else {
-      rec_messages = false;
-    }
-  });
-
-  $('.menuitem').on('click',function(){ 
-    switch ($(this).attr("id")) {
-      case "selectmocker": 
-              selectMocker();
-              $("menu").hide("slow");
-              break;
-      default: 
-              selectMocker();
-              break;
-    }
-  });
-
-  $("#showlogs").change(function() {
-    if ($('#showlogs').is(":checked") ) {
-      $('#output-window').show("slow"); 
-    } else {
-      $('#output-window').hide("slow"); 
-    }
-  });
-
-  $('#output-window').on('click',function(){ 
-    $('#output-window').toggleClass("closepane"); 
-  });
-
-  $('#selected-simulation').text(selectedSim);
-
-  //pollServer();
-  setVisualisationFrame();
-});
-
 function setVisualisationFrame() {
   var w = window,
     d = document,
@@ -186,8 +91,10 @@ function setupEventStream() {
     var event = JSON.parse(e.data);
 
     var graph = {
-      add:     [],
-      remove:  [],
+      newNodes: [],
+      newLinks: [],
+      removeNodes: [],
+      removeLinks: [],
       message: []
     };
 
@@ -199,40 +106,34 @@ function setupEventStream() {
         }
 
         var el = {
-          group: "nodes",
-          data: {
-            id: event.node.config.id,
-            name: event.node.config.name,
-            up: event.node.up
-          },
-          control: event.control
+          id: event.node.config.id,
+          label: event.node.config.id,
+          control: event.control,
+          name: event.node.config.name,
+          up: event.node.up
         };
 
         if (event.node.up) {
-          graph.add.push(el);
+          graph.newNodes.push(el);
         } else {
-          graph.remove.push(el);
+          graph.removeNodes.push(el);
         }
 
         break;
 
       case "conn":
         var el = {
-          group: "edges",
-          data: {
-            id:     event.conn.one + "-" + event.conn.other,
-            source: event.conn.one,
-            target: event.conn.other,
-            up:     event.conn.up,
-            distance: event.conn.distance
-          },
+          distance: 9 - (event.conn.distance / 10),
+          id:     event.conn.one + "-" + event.conn.other,
+          source: event.conn.one,
+          target: event.conn.other,
           control: event.control
         };
 
         if (event.conn.up) {
-          graph.add.push(el);
+          graph.newLinks.push(el);
         } else {
-          graph.remove.push(el);
+          graph.removeLinks.push(el);
         }
 
         break;
@@ -242,13 +143,10 @@ function setupEventStream() {
           return;
         }
         graph.message.push({
-          group: "msgs",
-          data: {
-            id:     event.msg.one + "-" + event.msg.other,
-            source: event.msg.one,
-            target: event.msg.other,
-            up:     event.msg.up
-          },
+          id:     event.msg.one + "-" + event.msg.other,
+          source: event.msg.one,
+          target: event.msg.other,
+          up:     event.msg.up,
           control: event.control
         });
 
@@ -284,6 +182,22 @@ function selectMockerBackend(id) {
   funcClose();
 }
 
+function clearViz() {
+  d3.select("#network-visualisation").selectAll("*").remove();
+  visualisation.sidebar.resetCounters();
+  $("#power").removeClass("power-off");
+  $("#power").addClass("power-on");
+  $("#play").addClass("invisible");
+  $("#play").addClass("fa-play-circle");
+  $("#play").removeClass("fa-pause");
+  $("#refresh").addClass("invisible");
+  $("#show-conn-graph").addClass("invisible");
+  $(".timemachine-section").hide("fast");
+  $("#timemachine-visualisation").hide();
+  $("#network-visualisation").show();
+}
+  
+
 function startViz(){
   $.post(BACKEND_URL + "/networks/" + networkname + "/mock/" + selectedSim).then(
     function(d) {
@@ -304,6 +218,7 @@ function startViz(){
 }
 
 function initializeServer(){
+  eventHistory = [];
   initializeVisualisationWithClass(networkname);
   $("#error-messages").hide();
   $(".display").css({"opacity": "1"});
@@ -313,9 +228,9 @@ function initializeServer(){
       //initializeMocker(networkname_);
       $(".elapsed").show();
       $("#start").removeClass("invisible");
+      $("#refresh").addClass("invisible");
       $("#upload").removeClass("invisible");
-      //loadExistingNodes();
-      //setupEventStream();
+      d3.select("#network-visualisation").selectAll("*").remove();
       //clearInterval(pollInterval);
     },
     function(e,s,err) {
@@ -329,24 +244,7 @@ function initializeServer(){
 function startSim() {
   $(".display .label").text("Connecting with backend...");
   loadExistingNodes();
-  setupEventStream();
 }
-
-function restartNetwork() {
-  $("#power").removeClass("power-off");
-  $("#power").addClass("power-on");
-  $("#stop").removeClass("fa-play");
-  $("#stop").addClass("fa-stop");
-  $("#play").addClass("invisible");
-  $("#refresh").addClass("invisible");
-  d3.select("#network-visualisation").selectAll("*").remove();
-  initializeServer();
-  visualisation.sidebar.resetCounters();
-  $("#show-conn-graph").addClass("invisible");
-  $(".timemachine-section").hide("fast");
-  $("#timemachine-visualisation").hide();
-  $("#network-visualisation").show();
-};
 
 function stopNetwork() {
   visualisation.simulation.stop();
@@ -361,13 +259,12 @@ function stopNetwork() {
     contentType:'application/json',
     dataType: 'text', 
     success: function(d) {
-      $("#stop").removeClass("invisible");
       eventSource.close();
       clearInterval(clockId);
       resetTimer();
-      $("#stop").removeClass("fa-stop");
-      $("#stop").addClass("fa-play");
+      $("#stop").addClass("invisible");
       $("#stop").removeClass("stale");
+      $("#snapshot").addClass("invisible");
       $("#show-conn-graph").removeClass("invisible");
       $(".display .label").text("Simulation stopped. Network deleted.");
       $("#rec_messages").attr("disabled",false);
@@ -388,26 +285,26 @@ function loadExistingNodes() {
   $.get(BACKEND_URL + "/networks/" + networkname + "/nodes").then(
     function(d) {
       var graph = {
-        add:     [],
-        remove:  [],
+        newNodes: [],
+        newLinks: [],
+        removeNodes: [],
+        removeLinks: [],
         message: []
       };
       
       for (var i=0; i<d.length; i++) {
         var el = {
-          group: "nodes",
-          data: {
-            id: d[i].id,
-            name:d[i].name,
-            up: true 
-          },
+          id: d[i].id,
+          name:d[i].name,
+          up: true,
           control: false 
         };
-        graph.add.push(el);
+        graph.newNodes.push(el);
       }
       console.log("Successfully loaded existing node list");
       //console.log(graph.add);
       updateVisualisationWithClass(graph);
+      setupEventStream();
     },
     function(d) {
       console.log("Error getting nodes list from backend");
@@ -454,6 +351,7 @@ function replayViz() {
   $("#refresh").addClass("invisible");
   $("#play").removeClass("invisible");
   $(".timemachine-section").show("slow");
+  $(".display .label").text("Replaying last simulation run.");
   //$('#pause').prop("disabled",true);
   //$('#play').prop("disabled",false);
 }
@@ -491,7 +389,6 @@ function doUploadSnapshot() {
       function(d){
         console.log("snapshot uploaded");
         loadExistingNodes();
-        setupEventStream();
         $("#upload").addClass("invisible");
         $("#start").addClass("invisible");
         $("#stop").removeClass("invisible");
@@ -591,47 +488,16 @@ function funcClose() {
   $("#close").remove();
 }
 
-function getGraphNodes(arr) {
-   return arr.filter(function(i,e){return e.group === 'nodes'})
-      .map(function(i,e){
-        return {
-          id: e.data.id,
-          label: nodeShortLabel(e.data.id),
-          name: e.data.name,
-          control: e.control,
-          visible: true,
-          group: 1
-       };
-      }).toArray();
-}
-
-function getGraphLinks(arr) {
-  return arr.filter(function(i,e){return e.group === 'edges' && !e.control} )
-      .map(function(i,e){
-        return {
-          id: e.data.id,
-          distance: 9 - (e.data.distance / 10),
-          label: nodeShortLabel(e.data.id),
-          control: e.control,
-          source: e.data.source,
-          target: e.data.target,
-          visible: true,
-          group: 1,
-          value: i
-        };
-      }).toArray();
-}
-
 function initializeVisualisationWithClass(networkname_){
   this.visualisation = window.visualisation = new P2Pd3(d3.select("#network-visualisation"));
 };
-
 
 function updateVisualisationWithClass(graph) {
   var self = this;
 
   //console.log("Updating visualization with new graph");
-  eventHistory.push({timestamp:$("#time-elapsed").text(), content: graph});
+  var evtCopy = $.extend(true, {}, graph);
+  eventHistory.push({timestamp:$("#time-elapsed").text(), content: evtCopy});
   
   if ($("#showlogs").is(":checked")) {
     var objs = [graph.add, graph.remove, graph.message];
@@ -648,30 +514,7 @@ function updateVisualisationWithClass(graph) {
   var elem = document.getElementById('output-window');
   elem.scrollTop = elem.scrollHeight;
 
-  //new nodes
-  var newNodes = getGraphNodes($(graph.add));
-  //new connections 
-  var newLinks = getGraphLinks($(graph.add));
-  //down nodes
-  var removeNodes = getGraphNodes($(graph.remove));
-  //down connections 
-  var removeLinks = getGraphLinks($(graph.remove));
-
-  var triggerMsgs = false;
-  if (rec_messages) { 
-    triggerMsgs = $(graph.message)
-        .map(function(i,e){
-          return {
-            id: e.data.id,
-            source: e.data.source,
-            target: e.data.target,
-            group: 1,
-            value: i
-          };
-        })
-        .toArray();
-  } 
-  self.visualisation.updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs);
+  self.visualisation.updateVisualisation(graph);
 };
 
 
