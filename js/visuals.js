@@ -32,7 +32,7 @@ class P2Pd3Sidebar {
     var classThis = this;
   
     $.ajax({
-      url: BACKEND_URL + "/networks/"  + networkname + "/nodes/" + nodeId,
+      url: BACKEND_URL + "/nodes/" + nodeId,
       type: "GET",
       dataType: "json"
       }).then(
@@ -171,7 +171,7 @@ function killLink() {
 
 function killNode() {
   var node = $('#full-node-id').val();
-  $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + node + "/stop").then(
+  $.post(BACKEND_URL + "/nodes/" + node + "/stop").then(
     function(d) {
       console.log("Node successfully stopped");
       $('#kad-hint').addClass("invisible");
@@ -192,7 +192,7 @@ function finalizeConnectTo() {
   selectingTarget = false;
   var target = $("#target-id").val();
   var source = $("#full-node-id").val();
-  $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + source+ "/conn/" + target).then(
+  $.post(BACKEND_URL + "/nodes/" + source+ "/conn/" + target).then(
     function(d) {
       console.log("Node successfully connected");
     },
@@ -206,7 +206,7 @@ function disconnectLink(id) {
   var conn = visualisation.connsById[id];
   //$.ajax(options);
   $.ajax({
-    url: BACKEND_URL + "/networks/" + networkname + "/nodes/" + conn.source+ "/conn/" + conn.target,
+    url: BACKEND_URL + "/nodes/" + conn.source+ "/conn/" + conn.target,
     type: "DELETE",
     data: {},
     contentType:'application/json',

@@ -7,7 +7,7 @@ $(document).ready(function() {
         pauseReplay();
         clearViz();
       } 
-      initializeServer(networkname); 
+      initializeServer(); 
     } else {
       stopNetwork(); 
     }
@@ -32,10 +32,6 @@ $(document).ready(function() {
 
   $("#start").click(function() {
     startSim();
-  });
-
-  $("#pause").click(function() {
-    pauseNetwork();
   });
 
   $("#refresh").click(function() {

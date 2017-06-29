@@ -4,8 +4,6 @@ var m = 0;
 var s = 0;
 var clockId;
 
-var networkname           = "0";
-
 var mockerlist            = [];
 var mockerlist_generated  = false;
 var defaultSim            = "default";
@@ -85,7 +83,7 @@ function pollServer() {
 }
 
 function setupEventStream() {
-  eventSource = new EventSource(BACKEND_URL + '/networks/' + networkname + "/events");
+  eventSource = new EventSource(BACKEND_URL + '/events?current=true');
 
   eventSource.addEventListener("network", function(e) {
     var event = JSON.parse(e.data);
@@ -199,7 +197,7 @@ function clearViz() {
   
 
 function startViz(){
-  $.post(BACKEND_URL + "/networks/" + networkname + "/mock/" + selectedSim).then(
+  $.post(BACKEND_URL + "/mock/" + selectedSim).then(
     function(d) {
       startTimer();
       $(".display .label").text("Simulation running");
@@ -219,13 +217,13 @@ function startViz(){
 
 function initializeServer(){
   eventHistory = [];
-  initializeVisualisationWithClass(networkname);
+  initializeVisualisationWithClass();
   $("#error-messages").hide();
   $(".display").css({"opacity": "1"});
-  $.post(BACKEND_URL + "/networks", JSON.stringify({Id: networkname})).then(
+  $.get(BACKEND_URL).then(
     function(d){
-      //console.log("Backend POST init ok");
-      //initializeMocker(networkname_);
+      console.log(d);
+      //console.log("Backend ok");
       $(".elapsed").show();
       $("#start").removeClass("invisible");
       $("#refresh").addClass("invisible");
@@ -236,14 +234,15 @@ function initializeServer(){
     function(e,s,err) {
       $("#error-messages").show();
       $("#error-reason").text("Is the backend running?");
-      console.log("Error sending POST to " + BACKEND_URL + "/networks");
+      console.log("Error connecting to backend at: " + BACKEND_URL);
       console.log(e);
     });
 };
 
 function startSim() {
   $(".display .label").text("Connecting with backend...");
-  loadExistingNodes();
+  setupEventStream();
+  //loadExistingNodes();
 }
 
 function stopNetwork() {
@@ -252,13 +251,8 @@ function stopNetwork() {
   $("#stop").addClass("stale");
   $("#power").addClass("stale");
   
-  $.ajax({
-    url: BACKEND_URL + "/networks/" + networkname,
-    type: "DELETE",
-    data: {},
-    contentType:'application/json',
-    dataType: 'text', 
-    success: function(d) {
+  $.post(BACKEND_URL + "/stop").then(
+    function(d) {
       eventSource.close();
       clearInterval(clockId);
       resetTimer();
@@ -273,16 +267,16 @@ function stopNetwork() {
       $("#power").removeClass("stale");
       $("#refresh").removeClass("invisible");
     },
-    error: function(d) {
+    function(d) {
       $(".display .label").text("Failed to stop network!");
       $("#stop").removeClass("stale");
       $("#power").removeClass("stale");
     }
-  });
+  );
 }
 
 function loadExistingNodes() {
-  $.get(BACKEND_URL + "/networks/" + networkname + "/nodes").then(
+  $.get(BACKEND_URL + "/nodes").then(
     function(d) {
       var graph = {
         newNodes: [],
@@ -304,44 +298,10 @@ function loadExistingNodes() {
       console.log("Successfully loaded existing node list");
       //console.log(graph.add);
       updateVisualisationWithClass(graph);
-      setupEventStream();
     },
     function(d) {
       console.log("Error getting nodes list from backend");
     });
-}
-
-function pauseNetwork() {
-  $(".display .label").text("Pause network: waiting for backend...");
-  $("#pause").addClass("stale");
-  if ($("#pause").hasClass("paused")) {
-    d3.select("#network-visualisation").selectAll("circle").remove();
-    $.post(BACKEND_URL + "/networks/" + networkname + "/start").then(
-      function(d) {
-        startTimer();
-        $("#show-conn-graph").addClass("invisible");
-        $("#pause").removeClass("paused");
-        $(".display .label").text("Simulation running.");
-        $("#pause").removeClass("stale");
-      },
-      function(d) {
-        $(".display .label").text("Continuing simulation failed!");
-        $("#pause").removeClass("stale");
-      });
-  } else {
-    $.post(BACKEND_URL + "/networks/" + networkname + "/stop").then(
-      function(d) {
-        clearInterval(clockId);
-        $("#show-conn-graph").removeClass("invisible");
-        $("#pause").addClass("paused");
-        $(".display .label").text("Simulation paused. Network running.");
-        $("#pause").removeClass("stale");
-      },
-      function(d) {
-        $(".display .label").text("Pausing simulation failed!");
-        $("#pause").removeClass("stale");
-      });
-  }
 }
 
 function replayViz() {
@@ -352,12 +312,10 @@ function replayViz() {
   $("#play").removeClass("invisible");
   $(".timemachine-section").show("slow");
   $(".display .label").text("Replaying last simulation run.");
-  //$('#pause').prop("disabled",true);
-  //$('#play').prop("disabled",false);
 }
 
 function takeSnapshot() {
-  $.get(BACKEND_URL + "/networks/" + networkname + "/snapshot").then(
+  $.get(BACKEND_URL + "/snapshot").then(
     function(d) {
       //console.log("Snapshot successfully taken");
       //console.log(d);
@@ -385,7 +343,7 @@ function doUploadSnapshot() {
   reader.readAsText(f);
   reader.onload = function(e) {
     var snapshot = reader.result;
-    $.post(BACKEND_URL + "/networks/" + networkname + "/snapshot", snapshot).then(
+    $.post(BACKEND_URL + "/snapshot", snapshot).then(
       function(d){
         console.log("snapshot uploaded");
         loadExistingNodes();
@@ -406,7 +364,7 @@ function saveSnapshot(snapshot) {
   var a = document.createElement("a");
   var file = new Blob([snapshot], {type: "text/plain"});
   a.href = URL.createObjectURL(file);
-  a.download = networkname + "_" + Date.now() + ".js";
+  a.download = "Snapshot_" + Date.now() + ".js";
   a.click();  
 }
 
@@ -431,7 +389,7 @@ function showConnectionGraph() {
 
 
 function selectMocker() {
-  $.get(BACKEND_URL + "/networks/" + networkname + "/mock"). then(
+  $.get(BACKEND_URL + "/mock"). then(
     function(d) {
       console.log("Successfully retrieved mocker list");
       console.log(d);
@@ -488,7 +446,7 @@ function funcClose() {
   $("#close").remove();
 }
 
-function initializeVisualisationWithClass(networkname_){
+function initializeVisualisationWithClass(){
   this.visualisation = window.visualisation = new P2Pd3(d3.select("#network-visualisation"));
 };
 
