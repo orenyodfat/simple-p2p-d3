@@ -32,7 +32,7 @@ class P2Pd3Sidebar {
     var classThis = this;
   
     $.ajax({
-      url: BACKEND_URL + "/networks/"  + networkname + "/nodes/" + nodeId,
+      url: BACKEND_URL + "/nodes/" + nodeId,
       type: "GET",
       dataType: "json"
       }).then(
@@ -107,9 +107,6 @@ class P2Pd3Sidebar {
     $("#nodes-remove-count").text("0");
     $("#edges-remove-count").text("0");
     $("#msg-count").text("0");
-
-
-    this.visualisation.nodesById
   }
 
   formatNodeHTML(str) {
@@ -119,7 +116,7 @@ class P2Pd3Sidebar {
   selectConnections(id) {
     var self = this;
     //set node links to "foreground" (no opacity)
-    var conns         = this.visualisation.nodesById[nodeShortLabel(id)];
+    var conns         = this.visualisation.nodesById[id];
     this.visualisation.linkCollection.classed("stale", true);
     var connSelection = this.visualisation.linkCollection.filter(function(n) {
       return conns.indexOf(n.id) > -1;
@@ -174,7 +171,7 @@ function killLink() {
 
 function killNode() {
   var node = $('#full-node-id').val();
-  $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + node + "/stop").then(
+  $.post(BACKEND_URL + "/nodes/" + node + "/stop").then(
     function(d) {
       console.log("Node successfully stopped");
       $('#kad-hint').addClass("invisible");
@@ -195,7 +192,7 @@ function finalizeConnectTo() {
   selectingTarget = false;
   var target = $("#target-id").val();
   var source = $("#full-node-id").val();
-  $.post(BACKEND_URL + "/networks/" + networkname + "/nodes/" + source+ "/conn/" + target).then(
+  $.post(BACKEND_URL + "/nodes/" + source+ "/conn/" + target).then(
     function(d) {
       console.log("Node successfully connected");
     },
@@ -209,7 +206,7 @@ function disconnectLink(id) {
   var conn = visualisation.connsById[id];
   //$.ajax(options);
   $.ajax({
-    url: BACKEND_URL + "/networks/" + networkname + "/nodes/" + conn.source+ "/conn/" + conn.target,
+    url: BACKEND_URL + "/nodes/" + conn.source+ "/conn/" + conn.target,
     type: "DELETE",
     data: {},
     contentType:'application/json',
@@ -337,7 +334,7 @@ class P2Pd3 {
   }
 
 
-  updateVisualisation(newNodes,newLinks,removeNodes,removeLinks,triggerMsgs) {
+  updateVisualisation(graph) {
     var self = this;
 	
   	this.updatecount++;
@@ -345,12 +342,12 @@ class P2Pd3 {
     this.linksChanged = false;
     this.animateMessages = false;
 	
-    this.appendNodes(newNodes);
-    this.removeNodes(removeNodes);
-    this.appendLinks(newLinks);
-    this.removeLinks(removeLinks);
+    this.appendNodes(graph.newNodes);
+    this.removeNodes(graph.removeNodes);
+    this.appendLinks(graph.newLinks);
+    this.removeLinks(graph.removeLinks);
     
-    this.msg = this.processMsgs(triggerMsgs);
+    this.msg = this.processMsgs(graph.messages);
 
     if (!this.initialized) {
       this.initialize();
@@ -450,9 +447,9 @@ class P2Pd3 {
 
     for (var i=0; i<nodes.length; i++) {
       //console.log("NEW node: " + nodes[i].id);
-        this.nodesById[nodeShortLabel(nodes[i].id)] = [];
-        this.graphNodes.push(nodes[i]);
-        nodeAddCounter += 1;
+      this.nodesById[nodes[i].id] = [];
+      this.graphNodes.push(nodes[i]);
+      nodeAddCounter += 1;
     }
     this.nodesChanged = true;
   }
@@ -468,7 +465,6 @@ class P2Pd3 {
           if (n.id == nodes[k].id) {
             contained = true;
             delete self.nodesById[nodes[k].id];
-            //n.visible = false;
             break;
           } 
           nodeRemoveCounter += 1;
@@ -484,19 +480,20 @@ class P2Pd3 {
     var self = this;
     for (var i=0;i<links.length;i++) {
       var id     = links[i].id;
-      var source = nodeShortLabel(links[i].source);
-      var target = nodeShortLabel(links[i].target);
+      var source = links[i].source;
+      var target = links[i].target;
       var selectedNode = $("#full-node-id").val();
       if (selectedNode == links[i].source || selectedNode == links[i].target) {
         self.updateKadTable(selectedNode);
       }
-      //this should not happen, but it does...
-      //indicates connections arrive before node events
-      //so this is a bit of a hack...TODO on backend
+      //The following is a hack to hedge against incoming connections to/from
+      //non-existing nodes. It was happening regularly due to some backend bug.
+      //CURRENTLY DISABLED AS IT SEEMS NOT TO BE HAPPENING FOR THE TIME BEING.
+      /*
       var srcmatch = false;
       var trgmatch = false;
       for (var k=0; k<this.graphNodes.length; k++) {
-        var nid = nodeShortLabel(this.graphNodes[k].id)
+        var nid = this.graphNodes[k].id
         if (nid == source) {
           srcmatch = true;
         }
@@ -511,6 +508,7 @@ class P2Pd3 {
       if (!srcmatch || !trgmatch) {
           return
       }
+      */
       this.nodesById[target].push(id);
       this.nodesById[source].push(id);
 
@@ -534,29 +532,7 @@ class P2Pd3 {
     this.linksChanged = true;
   }
 
-  hideNodesLinks(id) {
-    var linksToHide = [];
-    var connList = this.connsById;
-    Object.keys(connList).forEach(function(key,index) {
-      if (nodeShortLabel(connList[key].source) == id ||
-          nodeShortLabel(connList[key].target) == id ) {
-        linksToHide.push({id: key});
-        eventHistory.push({timestamp:$("#time-elapsed").text(), content: {add:[], remove:[{id: key}]} });
-        //uplinks -= 1;
-        //console.log("REMOVE connection, id:" + key);
-        //delete connList[key];
-      }
-    });
-    //$("#edges-up-count").text(uplinks);
-    this.removeLinks(linksToHide);
-    //delete this.nodesById[id];
-  } 
-
   updateKadTable(nodeId) {
-  //$('#node-kademlia-table').addClass("stale");
-  //if (selectionActive) {
-  //  $('#kad-hint').removeClass("invisible");
-  //}
     this.sidebar.getNodeInfo(nodeId);
     console.log("Kad table of selected Node updated");
   }
@@ -575,8 +551,8 @@ class P2Pd3 {
             if (selectedNode == links[k].source || selectedNode == links[k].target) {
               self.updateKadTable(selectedNode);
             }
-            var s = nodeShortLabel(links[k].source);            
-            var t = nodeShortLabel(links[k].target);            
+            var s = links[k].source;            
+            var t = links[k].target;            
             var j = self.nodesById[s].indexOf(n.id);
             if (j>-1) {
               self.nodesById[s].splice(j, 1);
@@ -631,7 +607,7 @@ function generateUID() {
     return ("0000" + (Math.random()*Math.pow(36,4) << 0).toString(36)).slice(-4)
 }
 
-function  nodeShortLabel(id) {
+function nodeShortLabel(id) {
     return id.substr(0,8);
 }
 

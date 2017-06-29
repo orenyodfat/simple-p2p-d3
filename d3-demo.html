@@ -7,6 +7,7 @@
 
     <script src="js/lib/jquery-2.2.4.min.js"></script>
     <script src="js/lib/d3.v4.min.js"></script>    
+    <script src="js/clickhandlers.js"></script>
     <script src="js/timemachine.js"></script>
     <script src="js/visuals.js"></script>
     <script src="js/network.js"></script>
@@ -31,7 +32,7 @@
         </div>
         -->
         <div class="title">
-          p2p Network Connectivity Graph
+          P2P Network Connectivity Graph
         </div>
         <!-- Currently disabled
         <div class="menu" onclick="showMenu()">
@@ -49,11 +50,11 @@
       <div id="sidebar" class=sidebar>
         <div class="controls">
           <i id="power" class="fa fa-power-off power-off" aria-hidden="true"></i>
-          <i id="play" class="invisible fa fa-play-circle" aria-hidden="true"></i>
-          <!--
-          <i id="pause" class="invisible fa fa-pause" aria-hidden="true"></i>
-          -->
+          <i id="start" class="invisible fa fa-play" aria-hidden="true"></i>
           <i id="stop" class="invisible fa fa-stop" aria-hidden="true"></i>
+          <i id="upload" class="invisible fa fa-upload" aria-hidden="true"></i>
+          <i id="snapshot" class="invisible fa fa-camera-retro" aria-hidden="true"></i>
+          <i id="play" class="invisible fa fa-play-circle" aria-hidden="true"></i>
           <i id="refresh" class="invisible fa fa-fast-backward" aria-hidden="true"></i>
           <div class="display">
             <div class="elapsed">Time elapsed: <span id="time-elapsed">00:00:00</span></div>
