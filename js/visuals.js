@@ -18,6 +18,7 @@ class P2Pd3Sidebar {
     selectedNode.find('#full-node-id').val(data.id);
     selectedNode.find('#node-id').html(nodeShortLabel(data.id));
     selectedNode.find('#node-index').html(data.index);
+    selectedNode.find('#node-name').html(data.name);
     this.selectConnections(data.id);
     if (this.visualisation == Timemachine) {
       return;
@@ -30,7 +31,7 @@ class P2Pd3Sidebar {
 
   getNodeInfo(nodeId) {
     var classThis = this;
-  
+
     $.ajax({
       url: BACKEND_URL + "/nodes/" + nodeId,
       type: "GET",
@@ -49,7 +50,7 @@ class P2Pd3Sidebar {
     if (this.ws) {
       this.ws.close();
     }
-    this.ws = new WebSocket("ws://localhost:8888/networks/0/nodes/" + nodeId + "/rpc");
+    this.ws = new WebSocket("ws://localhost:8888/nodes/" + nodeId + "/rpc");
     // Connection opened
     this.ws.addEventListener('open', function (event) {
       classThis.ws.send('{"jsonrpc":"2.0","id":1,"method":"hive_healthy","params": [null]}');
@@ -69,7 +70,7 @@ class P2Pd3Sidebar {
           } else {
             $("#healthy").addClass("power-off");
             $("#healthy").removeClass("power-on");
-          } 
+          }
           $("#healthy").removeClass("invisible");
         } else {
           console.log("Unexpected error from WS response!");
@@ -210,7 +211,7 @@ function disconnectLink(id) {
     type: "DELETE",
     data: {},
     contentType:'application/json',
-    dataType: 'text', 
+    dataType: 'text',
     success: function(d) {
       console.log("Edge successfully removed");
     },
@@ -288,7 +289,7 @@ class P2Pd3 {
     if (!d3.event.active) simulation.alphaTarget(0);
     d.fx = null;
     d.fy = null;
-  } 
+  }
   // end event callbacks
 
   initialize() {
@@ -304,7 +305,7 @@ class P2Pd3 {
         //.force("x", d3.forceX())
         //.force("y", d3.forceY())
         .alphaDecay(0)
-        .alphaMin(0)     
+        .alphaMin(0)
         .on("tick", function(){ self.ticked(self.linkCollection, self.nodeCollection) });
 
     if (!this.skipCollectionSetup) {
@@ -336,18 +337,18 @@ class P2Pd3 {
 
   updateVisualisation(graph) {
     var self = this;
-	
+
   	this.updatecount++;
     this.nodesChanged = false;
     this.linksChanged = false;
-    this.animateMessages = false;
-	
+    this.animateMessages = true;
+
     this.appendNodes(graph.newNodes);
     this.removeNodes(graph.removeNodes);
     this.appendLinks(graph.newLinks);
     this.removeLinks(graph.removeLinks);
-    
-    this.msg = this.processMsgs(graph.messages);
+
+    this.msg = this.processMsgs(graph.message);
 
     if (!this.initialized) {
       this.initialize();
@@ -416,22 +417,23 @@ class P2Pd3 {
           .call(d3.drag()
               .on("start", function(d){ self.dragstarted(self.simulation, d); } )
               .on("drag", function(d){ self.dragged(d); } )
-              .on("end", function(d){ self.dragended(self.simulation, d); } ))  
+              .on("end", function(d){ self.dragended(self.simulation, d); } ))
           .merge(this.nodeCollection);
     }
 
 
-    if (this.animateMessages && this.msg.length) {
+    if (this.animateMessages && this.msg && this.msg.length) {
       var self = this;
       this.msgCollection = this.linkCollection.filter(function(n) {
         return self.msg[0].id == n.id;
       });
       this.msgCollection
+        .attr("stroke-width", 5)
         .classed("highlight",true);
-      setTimeout(this.resetMsgCollection, 1000);
+      setTimeout(this.resetMsgCollection, 5000);
     }
 
-    this.simulation.nodes(self.graphNodes);            
+    this.simulation.nodes(self.graphNodes);
     this.simulation.force("link").links(self.graphLinks);
     this.simulation.force("center", d3.forceCenter(self.width/2, self.height/2));
     this.simulation.alpha(1).restart();
@@ -439,7 +441,7 @@ class P2Pd3 {
 
   resetMsgCollection() {
     if (!this.msgCollection) return;
-    this.msgCollection.classed("highlight",false);
+    this.msgCollection.attr("stroke-width", 0.4).classed("highlight",false);
   }
 
   appendNodes(nodes){
@@ -459,17 +461,17 @@ class P2Pd3 {
     var self = this;
 
     //console.log("REMOVE node: " + nodes[0].id);
-    this.graphNodes = this.graphNodes.filter(function(n){ 
+    this.graphNodes = this.graphNodes.filter(function(n){
         var contained = false;
         for (var k=0; k<nodes.length; k++) {
           if (n.id == nodes[k].id) {
             contained = true;
             delete self.nodesById[nodes[k].id];
             break;
-          } 
+          }
           nodeRemoveCounter += 1;
         }
-        return contained == false; 
+        return contained == false;
     });
     this.nodesChanged = true;
   }
@@ -541,7 +543,7 @@ class P2Pd3 {
     if (!links.length) { return }
 
     var self = this;
-    this.graphLinks= this.graphLinks.filter(function(n){ 
+    this.graphLinks= this.graphLinks.filter(function(n){
         var contained = false
         for (var k=0; k<links.length; k++) {
           if (n.id == links[k].id) {
@@ -551,8 +553,8 @@ class P2Pd3 {
             if (selectedNode == links[k].source || selectedNode == links[k].target) {
               self.updateKadTable(selectedNode);
             }
-            var s = links[k].source;            
-            var t = links[k].target;            
+            var s = links[k].source;
+            var t = links[k].target;
             var j = self.nodesById[s].indexOf(n.id);
             if (j>-1) {
               self.nodesById[s].splice(j, 1);
@@ -563,13 +565,13 @@ class P2Pd3 {
             }
             connRemoveCounter += 1;
             break;
-          } 
+          }
         }
-        return contained == false ; 
+        return contained == false ;
     });
     this.linksChanged = true;
   }
-  
+
 	processMsgs(msgs){
     if (!msgs || !msgs.length) { return msgs }
 
@@ -590,7 +592,7 @@ class P2Pd3 {
   generateUID() {
     return ("0000" + (Math.random()*Math.pow(36,4) << 0).toString(36)).slice(-4)
   }
-  
+
   // we need an index instead for this, if too many nodes will be too slow
   getConnByNodes(sourceid,targetid) {
 	  for (var i = 0; i < this.graphLinks.length; i++) {

@@ -194,10 +194,10 @@ function clearViz() {
   $("#timemachine-visualisation").hide();
   $("#network-visualisation").show();
 }
-  
+
 
 function startViz(){
-  $.post(BACKEND_URL + "/mock/" + selectedSim).then(
+  $.get(BACKEND_URL).then(
     function(d) {
       startTimer();
       $(".display .label").text("Simulation running");
@@ -456,17 +456,17 @@ function updateVisualisationWithClass(graph) {
   //console.log("Updating visualization with new graph");
   var evtCopy = $.extend(true, {}, graph);
   eventHistory.push({timestamp:$("#time-elapsed").text(), content: evtCopy});
-  
+
   if ($("#showlogs").is(":checked")) {
     var objs = [graph.add, graph.remove, graph.message];
     var act  = [ "ADD", "REMOVE", "MESSAGE" ];
     for (var i=0;i<objs.length; i++) {
       for (var k=0; objs[i] && k<objs[i].length; k++) {
         var obj = objs[i][k];
-        var str = act[i] + " - " + obj.group + " Control: " + obj.control + " - " + obj.data.id + "</br>";
+        var str = act[i] + " - " + obj.group + " Control: " + obj.control + " - " + obj.id + "</br>";
         $("#log-console").append(str);
       }
-    } 
+    }
   }
 
   var elem = document.getElementById('output-window');
